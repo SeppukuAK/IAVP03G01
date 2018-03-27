@@ -5,6 +5,7 @@ using System.Text;
 
 //--------TIPOS---------
 public enum Terreno {TIERRA, BARRO, AGUJERO, SANGRE,SANGREBARRO, NULL};
+public enum Estado { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY};
 //public enum Direccion { ARRIBA, ABAJO, IZQUIERDA, DERECHA, IDLE };
 
 public class Pos

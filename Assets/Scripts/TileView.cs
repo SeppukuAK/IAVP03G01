@@ -6,7 +6,6 @@ public class TileView : MonoBehaviour {
 
     Tile tile;
 
-    // Use this for initialization
     void Start()
     {
     }
@@ -14,6 +13,18 @@ public class TileView : MonoBehaviour {
     public void ConstruyeCasilla(Tile tile)
     {
         this.tile = tile;
+    }
+
+    public void OnMouseDown()
+    {
+        //Se coloca el cadaver cuando no hay casa
+        if (GameManager.instance.Estado == Estado.COLOCACADAVER && !GameManager.instance.HayCasa(tile.pos))      
+            GameManager.instance.ColocaCadaver(tile.pos); 
+        
+        //Se coloca el agujero cuando no hay cadaver ni arma
+        else if (GameManager.instance.Estado == Estado.COLOCAAGUJERO && !GameManager.instance.HayCasa(tile.pos) && !GameManager.instance.HayCadaver(tile.pos) && !GameManager.instance.HayArma(tile.pos))        
+            GameManager.instance.ColocaAgujero(tile.pos);
+        
     }
 
 }

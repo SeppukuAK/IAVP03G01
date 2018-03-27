@@ -5,7 +5,7 @@ using System.Text;
 
 
 public class Tile
-{
+{  
     public Terreno terreno { get; set; }
     public Pos pos { get; set; }
 

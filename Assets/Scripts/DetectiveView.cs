@@ -7,7 +7,6 @@ public class DetectiveView : MonoBehaviour
 {
     Detective detective { get; set; }
 
-    // Use this for initialization
     void Start()
     {
 

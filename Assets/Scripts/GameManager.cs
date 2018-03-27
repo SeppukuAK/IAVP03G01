@@ -8,25 +8,28 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
 
-    Pos _posCasa, _posCadaver;
 
-     public Pos GetPosCasa() { return _posCasa; }
-    public Pos GetPosCadaver() { return _posCadaver; }
+    //--------ATRIBUTOS--------------
+    //Posibles Scripts
+    public Pos PosCasa { get; set; }
+    public Pos PosCadaver { get; set; }
+    public Pos PosArma { get; set; }
 
-   public void SetPosCasa(Pos pos) { _posCasa = pos; }
-   public void SetPosCadaver(Pos pos) { _posCadaver = pos; }
+    public Estado Estado { get; set; }
+    public GameObject[,] MatrizTiles { get; set; }//matriz de GO tiles
 
-
-    //public Text textoReloj;
+    //Macros
     public const int ANCHO = 10;
     public const int ALTO = 5;
+    public const float DISTANCIA = 0.70f;
 
     Tablero tablero;
-  
+   
+    int numAgujeros;//numero de agujeros que puede colocar el usuario
 
-    public const float Distancia = 0.70f;
+    //--------ATRIBUTOS--------------
 
-    //--------ATRIBUTOS--------
+    //--------ATRIBUTOS UNITY--------
 
     public GameObject tilePrefab;
     public GameObject casaPrefab;
@@ -37,123 +40,225 @@ public class GameManager : MonoBehaviour
     public Sprite spriteBarro;
     public Sprite spriteAgujero;
     public Sprite spriteSangre;
-    public Sprite spriteTierra;
+    public Sprite spriteSangreBarro;
 
-    //--------ATRIBUTOS--------
+    //--------ATRIBUTOS UNITY--------
 
 
-    // Use this for initialization
     void Start()
     {
         instance = this;
-		//_barcoSeleccionado = null;
 
-		tablero = new Tablero();
+        Estado = Estado.COLOCACADAVER;
+        numAgujeros = 3;
+
+        MatrizTiles = new GameObject[ALTO, ANCHO];
+        tablero = new Tablero();
+
         ColocaTablero();
 
-
-        //_seleccionado = ColorUnidad.ninguno;
-        ConstruyeUnidades();
     }
 
-    // Update is called once per frame
     void Update()
     {
 
     }
-		
-    //---------------CONSTRUCCIÓN TILES------------------------
 
     //Pasa la representación lógica del tablero (matriz) a la representación física (gameobjects)
     void ColocaTablero()
     {
         GameObject GOTablero = new GameObject("Tablero");
 
-        for (int y = 0; y < ALTO; y++)
+        for (int y = 0; y < GameManager.ALTO; y++)
         {
-            for (int x = 0; x < ANCHO; x++)
+            for (int x = 0; x < GameManager.ANCHO; x++)
             {
                 //Creamos gameObject
-                GameObject GOTileAux = Instantiate(tilePrefab, new Vector3(x * Distancia, -y * Distancia, 0), Quaternion.identity, GOTablero.transform);
+                MatrizTiles[y, x] = Instantiate(tilePrefab, new Vector3(x * DISTANCIA, -y * DISTANCIA, 0), Quaternion.identity, GOTablero.transform);
 
-				Tile tileAux = tablero.matriz[y, x];
-
+                Tile tileAux = tablero.Matriz[y, x];
 
                 //Casilla
-				GOTileAux.GetComponent<TileView>().ConstruyeCasilla(tileAux);
+                MatrizTiles[y, x].GetComponent<TileView>().ConstruyeCasilla(tileAux);
             }
 
         }
         ColocaCasa();
-        //ColocaCadaver();
 
     }
 
-    void ColocaAgujero()
-    {
-       // GOTileAux.GetComponent<SpriteRenderer>().sprite = spriteAgujero;
-        //GOTileAux.GetComponent<Tile>().ConstruyeCasilla(tileAux);
-    }
+    //Se le llama al generar el tablero
     void ColocaCasa()
     {
-        SetPosCasa(new Pos(Random.Range(0, 10), Random.Range(0, 5)));
-        GameObject casa = Instantiate(casaPrefab, new Vector3(GetPosCasa().x * Distancia, -GetPosCasa().y * Distancia, 0), Quaternion.identity);
+        PosCasa = new Pos(Random.Range(0, 10), Random.Range(0, 5));
+        GameObject casa = Instantiate(casaPrefab, new Vector3(PosCasa.x * DISTANCIA, -PosCasa.y * DISTANCIA, 0), Quaternion.identity);
 
     }
 
-    void ColocaCadaver()
+    //Se le llama cuando el usuario hace click desde TileView
+    public void ColocaCadaver(Pos pos)
     {
-        SetPosCadaver(new Pos(Random.Range(0, 10), Random.Range(0, 5)));
+        //Coloca cadaver
+        PosCadaver = pos;
+        GameObject cadaver = Instantiate(cadaverPrefab, new Vector3(PosCadaver.x * DISTANCIA, -PosCadaver.y * DISTANCIA, 0), Quaternion.identity);
 
-        //Compruebo si hay Casa
-        while (HayCasa(GetPosCasa(), GetPosCadaver()))
+        //Coloca Sangre
+        tablero.ColocaSangre(pos.x, pos.y);
+        ColocaSpriteSangre(pos.x, pos.y);
+
+        //Coloca Arma
+        ColocaArma();
+
+        //Cambiamos el estado
+        Estado = Estado.COLOCAAGUJERO;
+    }
+
+    //-------Se le llama al colocar el cadaver-------------------
+
+    void ColocaArma()
+    {
+
+        do
         {
-            SetPosCadaver(new Pos(Random.Range(0, 10), Random.Range(0, 5)));
-        }
-       
-        GameObject cadaver = Instantiate(cadaverPrefab, new Vector3(GetPosCadaver().x * Distancia, -GetPosCadaver().y * Distancia, 0), Quaternion.identity);
+            int random = Random.Range(0, 8);
 
+            switch (random)
+            {
 
-       //tablero.ColocaAgujero();
+                case 0: //NORTE
+                    PosArma = new Pos(PosCadaver.x, PosCadaver.y - 2);
+                    break;
+
+                case 1: //NORESTE
+                    PosArma = new Pos(PosCadaver.x + 1, PosCadaver.y - 1);
+                    break;
+
+                case 2: //ESTE
+                    PosArma = new Pos(PosCadaver.x + 2, PosCadaver.y);
+                    break;
+
+                case 3: //SURESTE
+                    PosArma = new Pos(PosCadaver.x + 1, PosCadaver.y + 1);
+                    break;
+
+                case 4: //SUR
+                    PosArma = new Pos(PosCadaver.x, PosCadaver.y + 2);
+                    break;
+
+                case 5://SUROESTE
+                    PosArma = new Pos(PosCadaver.x - 1, PosCadaver.y + 1);
+                    break;
+
+                case 6://OESTE
+                    PosArma = new Pos(PosCadaver.x - 2, PosCadaver.y);
+                    break;
+
+                case 7://NOROESTE
+                    PosArma = new Pos(PosCadaver.x - 1, PosCadaver.y - 1);
+                    break;
+
+            }
+                
+        } while (DentroDelTablero(PosArma));
+
+        GameObject arma = Instantiate(armaPrefab, new Vector3(PosArma.x * DISTANCIA, -PosArma.y * DISTANCIA, 0), Quaternion.identity);
     }
 
-
-
-    public bool HayCadaver(Pos pos, Pos posCadaver)
+    bool DentroDelTablero(Pos pos) 
     {
-        if (pos == posCadaver)
+
+        if (!(pos.y < ALTO))
             return true;
-        else
-            return false;
 
-    }
-    public bool HayCasa(Pos pos, Pos posCasa)
-    {
-        if (pos == posCasa)
+        if (!(pos.y >= 0))
             return true;
-        else
-            return false;
+
+        if (!(pos.x < ANCHO))
+            return true;
+
+        if (!(pos.x >= 0))
+            return true;
+
+        return false;
     }
-    //---------------CONSTRUCCIÓN TILES------------------------
+
+    //-------Se le llama al colocar el cadaver-------------------//
 
 
-    //---------------CONSTRUCCIÓN UNIDADES------------------------
-
-    void ConstruyeUnidades()
+    //Se le llama cuando el usuario hace click desde TileView
+    public void ColocaAgujero(Pos pos)
     {
+        numAgujeros--; //Se reduce el numero de agujeros a colocar
+        tablero.ColocaAgujero(pos); //coloca el agujero en la matriz logica
 
-        //ColocaCasa();
-        //ColocaCadaver();
-		
+        //Aplicamos el sprite
+        MatrizTiles[pos.y, pos.x].GetComponent<SpriteRenderer>().sprite = spriteAgujero;
+        ColocaSpriteBarro(pos.x, pos.y);
+
+        //Cuando el numero de agujeros es 0 pasamos al estado de Pausa, antes de que la IA empiece
+        if (numAgujeros == 0)
+            Estado = Estado.PAUSA;
     }
 
 
+    //-------Se le llama al colocar el agujero-------------------
 
+    void ColocaSpriteSangre(int x, int y)
+    {
+        if (y + 1 < ALTO && tablero.Matriz[y + 1, x].terreno != Terreno.AGUJERO)
+            MatrizTiles[y + 1, x].GetComponent<SpriteRenderer>().sprite = spriteSangre;
 
-		
+        if (y - 1 >= 0 && tablero.Matriz[y - 1, x].terreno != Terreno.AGUJERO)
+            MatrizTiles[y - 1, x].GetComponent<SpriteRenderer>().sprite = spriteSangre;
 
-		
+        if (x + 1 < ANCHO && tablero.Matriz[y, x + 1].terreno != Terreno.AGUJERO)
+            MatrizTiles[y, x + 1].GetComponent<SpriteRenderer>().sprite = spriteSangre;
 
+        if (x - 1 >= 0 && tablero.Matriz[y, x - 1].terreno != Terreno.AGUJERO)
+            MatrizTiles[y, x - 1].GetComponent<SpriteRenderer>().sprite = spriteSangre;
+    }
+    
+    void ColocaSpriteBarro(int x, int y) 
+    {
+        if (y + 1 < ALTO && tablero.Matriz[y + 1, x].terreno != Terreno.AGUJERO)
+            DeterminaSangreBarro(MatrizTiles[y + 1, x], tablero.Matriz[y + 1, x]);                 
 
+        if (y - 1 >= 0 && tablero.Matriz[y - 1, x].terreno != Terreno.AGUJERO)      
+            DeterminaSangreBarro(MatrizTiles[y - 1, x], tablero.Matriz[y - 1, x]);       
 
+        if (x + 1 < ANCHO && tablero.Matriz[y, x + 1].terreno != Terreno.AGUJERO)        
+            DeterminaSangreBarro(MatrizTiles[y, x + 1], tablero.Matriz[y, x + 1]);
+     
+        if (x - 1 >= 0 && tablero.Matriz[y, x - 1].terreno != Terreno.AGUJERO)       
+            DeterminaSangreBarro(MatrizTiles[y, x - 1], tablero.Matriz[y, x - 1]);
+        
+    }
+
+    void DeterminaSangreBarro(GameObject go, Tile tile)
+    {
+        if (tile.terreno == Terreno.SANGREBARRO)
+            go.GetComponent<SpriteRenderer>().sprite = spriteSangreBarro;
+
+        else
+            go.GetComponent<SpriteRenderer>().sprite = spriteBarro;
+    }
+
+    //-------Se le llama al colocar el agujero------------------//
+
+    //Métodos de comprobacion
+
+    public bool HayCadaver(Pos pos)
+    {
+        return (pos.Equals(PosCadaver));
+    }
+
+    public bool HayCasa(Pos pos)
+    {
+        return (pos.Equals(PosCasa));
+    }
+
+    public bool HayArma(Pos pos)
+    {
+        return (pos.Equals(PosArma));
+    }
 }
