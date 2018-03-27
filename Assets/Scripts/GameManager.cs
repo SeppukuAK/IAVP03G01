@@ -18,8 +18,8 @@ public class GameManager : MonoBehaviour
 
 
     //public Text textoReloj;
-    public const int ANCHO = 5;
-    public const int ALTO = 10;
+    public const int ANCHO = 10;
+    public const int ALTO = 5;
 
     Tablero tablero;
   
@@ -37,6 +37,7 @@ public class GameManager : MonoBehaviour
     public Sprite spriteBarro;
     public Sprite spriteAgujero;
     public Sprite spriteSangre;
+    public Sprite spriteTierra;
 
     //--------ATRIBUTOS--------
 
@@ -47,8 +48,8 @@ public class GameManager : MonoBehaviour
         instance = this;
 		//_barcoSeleccionado = null;
 
-		_logicaTablero = new LogicaTablero();
-        colocaTablero();
+		tablero = new Tablero();
+        ColocaTablero();
 
 
         //_seleccionado = ColorUnidad.ninguno;
@@ -64,7 +65,7 @@ public class GameManager : MonoBehaviour
     //---------------CONSTRUCCIÓN TILES------------------------
 
     //Pasa la representación lógica del tablero (matriz) a la representación física (gameobjects)
-    void colocaTablero()
+    void ColocaTablero()
     {
         GameObject GOTablero = new GameObject("Tablero");
 
@@ -75,23 +76,8 @@ public class GameManager : MonoBehaviour
                 //Creamos gameObject
                 GameObject GOTileAux = Instantiate(tilePrefab, new Vector3(x * Distancia, -y * Distancia, 0), Quaternion.identity, GOTablero.transform);
 
-				Tile tileAux = tablero.matriz[x, y];
+				Tile tileAux = tablero.matriz[y, x];
 
-                //SpriteRenderer
-                switch (tileAux.GetTerreno())
-                {
-                    case Terreno.tierra:
-                        GOTileAux.GetComponent<SpriteRenderer>().sprite = spriteTierra;
-                        break;
-
-                    case Terreno.barro:
-                        GOTileAux.GetComponent<SpriteRenderer>().sprite = spriteBarro;
-                        break;
-
-                    case Terreno.agujero:
-                        GOTileAux.GetComponent<SpriteRenderer>().sprite = spriteAgujero;
-                        break;
-                }
 
                 //Casilla
 				GOTileAux.GetComponent<TileView>().ConstruyeCasilla(tileAux);
@@ -99,7 +85,7 @@ public class GameManager : MonoBehaviour
 
         }
         ColocaCasa();
-        ColocaCadaver();
+        //ColocaCadaver();
 
     }
 
@@ -111,8 +97,7 @@ public class GameManager : MonoBehaviour
     void ColocaCasa()
     {
         SetPosCasa(new Pos(Random.Range(0, 10), Random.Range(0, 5)));
-        GameObject casa = Instantiate(casaPrefab, new Vector3(GetPosCasa().GetX()* Distancia, -GetPosCasa().GetY()*Distancia, 0), Quaternion.identity);
-        casa.GetComponent<SpriteRenderer>().sprite = spriteCasa;
+        GameObject casa = Instantiate(casaPrefab, new Vector3(GetPosCasa().x * Distancia, -GetPosCasa().y * Distancia, 0), Quaternion.identity);
 
     }
 
@@ -126,10 +111,10 @@ public class GameManager : MonoBehaviour
             SetPosCadaver(new Pos(Random.Range(0, 10), Random.Range(0, 5)));
         }
        
-        GameObject cadaver = Instantiate(cadaverPrefab, new Vector3(GetPosCadaver().GetX() * Distancia, -GetPosCadaver().GetY() * Distancia, 0), Quaternion.identity);
-        cadaver.GetComponent<SpriteRenderer>().sprite = spriteCadaver;
+        GameObject cadaver = Instantiate(cadaverPrefab, new Vector3(GetPosCadaver().x * Distancia, -GetPosCadaver().y * Distancia, 0), Quaternion.identity);
 
-        _logicaTablero.ColocaAgujero();
+
+       //tablero.ColocaAgujero();
     }
 
 
@@ -156,93 +141,19 @@ public class GameManager : MonoBehaviour
 
     void ConstruyeUnidades()
     {
-        Pos [] posBarcos = new Pos[3];
 
-        for (int i = 0; i < 3; i++)
-			posBarcos[i] = new Pos(-1,-1);
-        //Primero colocamos las casillas normales
         //ColocaCasa();
         //ColocaCadaver();
-		//CreaDetective("BarcoRojo", ColorUnidad.rojo, spriteBarcoRojo, spriteBarcoRojoSeleccionado,spriteFlechaRoja,ref posBarcos);
-		//CreaCadaver("BarcoAzul", ColorUnidad.azul, spriteBarcoAzul, spriteBarcoAzulSeleccionado, spriteFlechaAzul,ref posBarcos);
-		//CreaBarco("BarcoVerde", ColorUnidad.verde, spriteBarcoVerde, spriteBarcoVerdeSeleccionado,spriteFlechaVerde,ref posBarcos);
-    }
-    /*
-    void ColocaCasa()
-    {
-
-    }
-	void CreaDetective(string nombre, Sprite spriteDetective, ref Pos []posBarcos)
-    {
-		Pos posAux = new Pos(Random.Range(0, 10), Random.Range(0, 10));
-
-        //bool hayBarco = HayBarco(posAux,posBarcos);
-
-		while (_logicaTablero.GetLogicaTile(posAux).GetTerreno() == Terreno.muro || hayBarco)
-        {
-			posCasa = new Pos(Random.Range(0, 10), Random.Range(0, 10));
-            hayBarco = HayBarco(posAux, posBarcos);
-
-        }
-
-		posBarcos [(int)tipoBarco] = posAux;
-        GameObject barco = Instantiate(barcoPrefab, new Vector3(posAux.GetX() * Distancia, -posAux.GetY()*Distancia, 0), Quaternion.identity);
-        barco.name = nombre;
-
-        LogicaBarco logicaBarco = new LogicaBarco(tipoBarco, posAux);
-
-		//Construcción de flecha
-		GameObject flecha = Instantiate(flechaPrefab, new Vector3(posAux.GetX() * Distancia, -posAux.GetY()*Distancia, 0), Quaternion.identity);
-		flecha.GetComponent<SpriteRenderer>().sprite = spriteFlecha;
-
-        barco.GetComponent<Barco>().ConstruyeBarco(logicaBarco, spriteBarco, spriteBarcoSeleccionado,flecha);
-    }
-    //Comprueba si hay barco en una posición
-    bool HayBarco(Pos pos, Pos[] posBarcos)
-    {
-        bool hayBarco = false;
-
-        int i = 0;
-        while (!hayBarco && i < 3)
-        {
-            //Comprobamos si la posicion del barco a colocar coincide con la de un barco ya colocado
-            if (posBarcos[i] == pos)
-                hayBarco = true;
-            i++;
-        }
-        return hayBarco;
-    }
-
-    //---------------CONSTRUCCIÓN UNIDADES------------------------
-
-
-    public ColorUnidad GetSeleccionado() { return _seleccionado; }
-
-	public void SetSeleccionado(ColorUnidad colBarco, GameObject barco)
-    {
-        _seleccionado = colBarco;
-		_barcoSeleccionado = barco;
-
-    }
 		
-    public void MoverBarco(Pos pos)
-    {
-		_barcoSeleccionado.GetComponent<Barco> ().EmpiezaMovimiento(pos);
     }
-		
-	public LogicaTablero GetLogicaTablero()
-	{
-		return _logicaTablero;
-	}
 
-	public void DeseleccionaBarco()
-	{
-		_barcoSeleccionado.GetComponent<Barco> ().SetSpriteDeseleccionado ();
-		SetSeleccionado(ColorUnidad.ninguno, null);
-	}
-	public void escribeTiempo(string texto){
-		textoReloj.text = "Tiempo: " + texto + "ms";
-        
-	}
-    */
+
+
+
+		
+
+		
+
+
+
 }
