@@ -4,45 +4,40 @@ using System.Linq;
 using System.Text;
 
 //--------TIPOS---------
-public enum Terreno {tierra, barro, agujero, vacio};
-public enum Direccion { arriba, abajo, izquierda, derecha, idle };
+public enum Terreno {TIERRA, BARRO, AGUJERO, SANGRE,SANGREBARRO, NULL};
+//public enum Direccion { ARRIBA, ABAJO, IZQUIERDA, DERECHA, IDLE };
 
-//Origen
 public class Pos
 {
+    public int x { get; set; }
+    public int y { get; set; }
+
     public Pos(int x, int y)
     {
-        _x = x;
-        _y = y;
+        this.x = x;
+        this.y = y;
     }
-
-    public int GetX() { return _x; }
-    public int GetY() { return _y; }
-
-    public void SetX(int x) { _x = x; }
-    public void SetY(int y) { _y = y; }
-
-
-    int _x;
-    int _y;
-
-	public static bool operator ==(Pos a, Pos b)
-	{
-		return (a.GetX () == b.GetX () && a.GetY () == b.GetY ());
-	}
-
-	public static bool operator !=(Pos a, Pos b)
-	{
-		return (a.GetX () != b.GetX () || a.GetY () != b.GetY ());
-	}
 
 	public override string ToString ()
 	{
-		return string.Format (_x.ToString() + ":" + _y.ToString());
+		return string.Format (x.ToString() + ":" + y.ToString());
 	}
+
+    public override bool Equals(object obj)
+    {
+        var pos = obj as Pos;
+        return pos != null &&
+               x == pos.x &&
+               y == pos.y;
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = 1502939027;
+        hashCode = hashCode * -1521134295 + x.GetHashCode();
+        hashCode = hashCode * -1521134295 + y.GetHashCode();
+        return hashCode;
+    }
 }
-
-//public enum ColorUnidad { rojo, azul, verde, ninguno };
-
 
 //--------TIPOS---------

@@ -18,11 +18,10 @@ public class GameManager : MonoBehaviour
 
 
     //public Text textoReloj;
-    public const int Ancho = 5;
-    public const int Alto = 10;
-    public const int WorldSize = 100;
+    public const int ANCHO = 5;
+    public const int ALTO = 10;
 
-    LogicaTablero _logicaTablero;
+    Tablero tablero;
   
 
     public const float Distancia = 0.70f;
@@ -32,21 +31,12 @@ public class GameManager : MonoBehaviour
     public GameObject tilePrefab;
     public GameObject casaPrefab;
     public GameObject cadaverPrefab;
+    public GameObject detectivePrefab;
+    public GameObject armaPrefab;
 
-
-    public Sprite spriteTierra;
     public Sprite spriteBarro;
     public Sprite spriteAgujero;
     public Sprite spriteSangre;
-    public Sprite spriteCasa;
-
-
-    public Sprite spriteDetective;
-    public Sprite spriteArma;
-    public Sprite spriteCadaver;
-
-    //public Sprite spriteCasillaIluminada
-
 
     //--------ATRIBUTOS--------
 
@@ -78,14 +68,14 @@ public class GameManager : MonoBehaviour
     {
         GameObject GOTablero = new GameObject("Tablero");
 
-        for (int y = 0; y < 5; y++)
+        for (int y = 0; y < ALTO; y++)
         {
-            for (int x = 0; x < 10; x++)
+            for (int x = 0; x < ANCHO; x++)
             {
                 //Creamos gameObject
                 GameObject GOTileAux = Instantiate(tilePrefab, new Vector3(x * Distancia, -y * Distancia, 0), Quaternion.identity, GOTablero.transform);
 
-				LogicaTile tileAux = _logicaTablero.GetLogicaTile(x, y);
+				Tile tileAux = tablero.matriz[x, y];
 
                 //SpriteRenderer
                 switch (tileAux.GetTerreno())
@@ -104,7 +94,7 @@ public class GameManager : MonoBehaviour
                 }
 
                 //Casilla
-				GOTileAux.GetComponent<Tile>().ConstruyeCasilla(tileAux);
+				GOTileAux.GetComponent<TileView>().ConstruyeCasilla(tileAux);
             }
 
         }
@@ -115,8 +105,8 @@ public class GameManager : MonoBehaviour
 
     void ColocaAgujero()
     {
-        GOTileAux.GetComponent<SpriteRenderer>().sprite = spriteAgujero;
-        GOTileAux.GetComponent<Tile>().ConstruyeCasilla(tileAux);
+       // GOTileAux.GetComponent<SpriteRenderer>().sprite = spriteAgujero;
+        //GOTileAux.GetComponent<Tile>().ConstruyeCasilla(tileAux);
     }
     void ColocaCasa()
     {
