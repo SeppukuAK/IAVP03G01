@@ -6,6 +6,9 @@ using System.Text;
 //--------TIPOS---------
 public enum Terreno {TIERRA, BARRO, AGUJERO, SANGRE,SANGREBARRO, NULL};
 public enum Estado { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY};
+
+public enum Percepcion { EXPLORADO, INEXPLORADO, SEGURO, RIESGO, NULL };
+
 //public enum Direccion { ARRIBA, ABAJO, IZQUIERDA, DERECHA, IDLE };
 
 public class Pos
@@ -39,6 +42,12 @@ public class Pos
         hashCode = hashCode * -1521134295 + y.GetHashCode();
         return hashCode;
     }
+
+    public int ManhattanDistance (Pos pos)
+    {
+        return (Math.Abs(pos.x - x) + Math.Abs(pos.y - y));
+    }
+
 }
 
 //--------TIPOS---------

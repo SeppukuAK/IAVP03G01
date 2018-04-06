@@ -27,6 +27,9 @@ public class GameManager : MonoBehaviour
    
     int numAgujeros;//numero de agujeros que puede colocar el usuario
 
+    private Detective agente;
+    private GameObject agenteGO;
+
     //--------ATRIBUTOS--------------
 
     //--------ATRIBUTOS UNITY--------
@@ -41,6 +44,8 @@ public class GameManager : MonoBehaviour
     public Sprite spriteAgujero;
     public Sprite spriteSangre;
     public Sprite spriteSangreBarro;
+
+    public Button Button;
 
     //--------ATRIBUTOS UNITY--------
 
@@ -197,7 +202,14 @@ public class GameManager : MonoBehaviour
 
         //Cuando el numero de agujeros es 0 pasamos al estado de Pausa, antes de que la IA empiece
         if (numAgujeros == 0)
+        {
             Estado = Estado.PAUSA;
+            Button.gameObject.SetActive(true);
+
+            agenteGO = Instantiate(detectivePrefab, new Vector3(PosCasa.x * DISTANCIA, -PosCasa.y * DISTANCIA, 0), Quaternion.identity);
+
+            agente = new Detective(tablero.Matriz[PosCasa.y, PosCasa.x]);
+        }
     }
 
 
@@ -261,4 +273,40 @@ public class GameManager : MonoBehaviour
     {
         return (pos.Equals(PosArma));
     }
+
+
+    public void AvanzaBusqueda()
+    {
+        agente.AvanzaAPos();
+    }
+    
+    public Tile GetTile(Pos pos)
+    {
+        return tablero.Matriz[pos.y, pos.x];
+    }
+
+ 
+
+    public void MoverAgente(Stack<Pos> camino)
+    {
+        if (camino != null)
+        StartCoroutine("AvanzaUnPaso", camino);
+
+    }
+
+    IEnumerator AvanzaUnPaso(Stack<Pos> camino)
+    {
+        while (camino.Count > 0)
+        {
+            Pos pos = camino.Pop();
+
+            agente.pos = pos;
+            agenteGO.transform.position = new Vector3(pos.x * DISTANCIA, -pos.y * DISTANCIA, 0);
+
+            yield return new WaitForSeconds(0.1f);
+
+        }
+
+    }
+
 }

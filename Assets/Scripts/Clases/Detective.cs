@@ -6,14 +6,24 @@ public class Detective
 {
     public Pos pos { get; set; }
 
-    public Detective()
+    ConocimientoAgente conocimientoAgente;
+
+    public Detective(Tile tile)
     {
-        pos = new Pos(0, 0);
+        this.pos = tile.pos;
+        conocimientoAgente = new ConocimientoAgente(tile);
     }
 
-    public Detective(Pos pos)
+    public void  AvanzaAPos()
     {
-        this.pos = pos;
+        Pos nextPos = conocimientoAgente.NextBestPos(pos);
+
+        conocimientoAgente.ActualizaConocimiento(GameManager.instance.GetTile(nextPos));
+
+        //SE HACE EL A ESTRELLA HASTA QUE LLEGUE A LA POS
+        AEstrella A = new AEstrella(conocimientoAgente.Matriz, pos, nextPos);
+
+        GameManager.instance.MoverAgente(A.GetCamino());
 
     }
 
