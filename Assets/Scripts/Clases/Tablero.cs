@@ -149,19 +149,19 @@ public class Tablero
 
         if (y - 1 >= 0 && !Matriz[y - 1, x].Agujero)
         {
-            Matriz[y + 1, x].Barro = true;
+            Matriz[y - 1, x].Barro = true;
             GameManager.instance.ColocaSpriteBarro(x, y - 1);
         }
 
         if (x + 1 < GameManager.ANCHO && !Matriz[y, x + 1].Agujero)
         {
-            Matriz[y + 1, x].Barro = true;
+            Matriz[y , x +1].Barro = true;
             GameManager.instance.ColocaSpriteBarro(x+1, y);
         }
 
         if (x - 1 >= 0 && !Matriz[y, x - 1].Agujero)
         {
-            Matriz[y + 1, x].Barro = true;
+            Matriz[y, x-1].Barro = true;
             GameManager.instance.ColocaSpriteBarro(x-1, y);
 
         }

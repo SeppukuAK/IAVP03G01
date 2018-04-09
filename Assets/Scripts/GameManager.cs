@@ -28,6 +28,8 @@ public class GameManager : MonoBehaviour
 
     private Detective agente;
     private GameObject agenteGO;
+    private GameObject armaGO;
+    private GameObject cadaverGO;
 
     //--------ATRIBUTOS--------------
 
@@ -99,17 +101,14 @@ public class GameManager : MonoBehaviour
     {
         tablero.ColocaCadaver(pos.x, pos.y);
 
+        cadaverGO = Instantiate(cadaverPrefab, new Vector3(pos.x * DISTANCIA, -pos.y * DISTANCIA, 0), Quaternion.identity);
+
+
         //Cambiamos el estado
         Estado = Estado.COLOCAAGUJERO;
     }
 
     //------Se le llama desde Tablero.ColocaCadaver()------------
-
-    public void ColocaSpriteCadaver(int x, int y)
-    {
-        //Coloca cadaver
-        GameObject cadaver = Instantiate(cadaverPrefab, new Vector3(x * DISTANCIA, -y * DISTANCIA, 0), Quaternion.identity);
-    }
 
     public void ColocaSpriteSangre(int x, int y)
     {
@@ -118,7 +117,7 @@ public class GameManager : MonoBehaviour
 
     public void ColocaSpriteArma(int x, int y)
     {
-        GameObject arma = Instantiate(armaPrefab, new Vector3(x * DISTANCIA, -y * DISTANCIA, 0), Quaternion.identity);
+        armaGO = Instantiate(armaPrefab, new Vector3(x * DISTANCIA, -y * DISTANCIA, 0), Quaternion.identity);
     }
 
     //------Se le llama desde Tablero.ColocaCadaver()----------
@@ -145,6 +144,18 @@ public class GameManager : MonoBehaviour
             agenteGO = Instantiate(detectivePrefab, new Vector3(PosCasa.x * DISTANCIA, -PosCasa.y * DISTANCIA, 0), Quaternion.identity);
 
             agente = new Detective(tablero.Matriz[PosCasa.y, PosCasa.x]);
+
+            for (int y = 0; y < GameManager.ALTO; y++)
+            {
+                for (int x = 0; x < GameManager.ANCHO; x++)
+                {
+                    //Casilla
+                    MatrizTiles[y, x].GetComponent<SpriteRenderer>().color = Color.black;
+                }
+
+            }
+            armaGO.GetComponent<SpriteRenderer>().color = Color.black;
+            cadaverGO.GetComponent<SpriteRenderer>().color = Color.black;
         }
     }
 
@@ -171,9 +182,15 @@ public class GameManager : MonoBehaviour
     //Se le llama al pulsar el boton
     public void AvanzaBusqueda()
     {
+
         agente.AvanzaAPos();
-    }
+
     
+
+
+
+    }
+
     //Necesario para conocimientoAgente
     public Tile GetTile(Pos pos)
     {
@@ -201,6 +218,13 @@ public class GameManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
 
         }
+
+    }
+
+
+    public void Renderiza (Pos pos)
+    {
+        MatrizTiles[pos.y, pos.x].GetComponent<SpriteRenderer>().color = Color.white;
 
     }
 
