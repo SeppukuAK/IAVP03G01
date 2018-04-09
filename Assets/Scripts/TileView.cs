@@ -22,7 +22,7 @@ public class TileView : MonoBehaviour {
             GameManager.instance.ColocaCadaver(tile.pos); 
         
         //Se coloca el agujero cuando no hay cadaver ni arma
-        else if (GameManager.instance.Estado == Estado.COLOCAAGUJERO && !GameManager.instance.HayCasa(tile.pos) && !GameManager.instance.HayCadaver(tile.pos) && !GameManager.instance.HayArma(tile.pos))        
+        else if (GameManager.instance.Estado == Estado.COLOCAAGUJERO && !GameManager.instance.HayCasa(tile.pos) && !tile.Cadaver && !tile.Arma)        
             GameManager.instance.ColocaAgujero(tile.pos);
         
     }

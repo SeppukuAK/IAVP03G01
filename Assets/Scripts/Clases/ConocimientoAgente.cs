@@ -47,6 +47,7 @@ public class ConocimientoAgente
     {
         Matriz[tile.pos.y, tile.pos.x].Percepcion = TipoPercepcion.EXPLORADO;
 
+
         ActualizaFrontera(tile);
     }
 
@@ -56,32 +57,32 @@ public class ConocimientoAgente
         //Actualizo a la izquierda
         if (tile.pos.x > 0 )
         {
-            ActualizaPercepcion(tile.terreno, tile.pos.x -1, tile.pos.y);
+            ActualizaPercepcion(tile, tile.pos.x -1, tile.pos.y);
         }
 
         //Actualizo a la derecha
         if (tile.pos.x < GameManager.ANCHO - 1)
         {
-            ActualizaPercepcion(tile.terreno, tile.pos.x + 1, tile.pos.y);
+            ActualizaPercepcion(tile, tile.pos.x + 1, tile.pos.y);
 
         }
         //Actualizo arriba
         if (tile.pos.y > 0)
         {
-            ActualizaPercepcion(tile.terreno, tile.pos.x, tile.pos.y - 1);
+            ActualizaPercepcion(tile, tile.pos.x, tile.pos.y - 1);
 
         }
 
         //Actualizo abajo
         if (tile.pos.y < GameManager.ALTO - 1)
         {
-            ActualizaPercepcion(tile.terreno, tile.pos.x, tile.pos.y + 1);
+            ActualizaPercepcion(tile, tile.pos.x, tile.pos.y + 1);
 
         }
     }
 
     //Actualiza la percepción de una casilla a segura, insegura o prioritaria
-    void ActualizaPercepcion(Terreno terreno, int x, int y)
+    void ActualizaPercepcion(Tile tile, int x, int y)
     {
         //Si la casilla no ha sido explorada
         if (Matriz[y, x].Percepcion != TipoPercepcion.EXPLORADO)
@@ -89,7 +90,7 @@ public class ConocimientoAgente
             //Si la casilla no la he marcado ya como prioritaria
             if (Matriz[y, x].Percepcion != TipoPercepcion.PRIORITARIO)
             {
-                if (terreno == Terreno.SANGRE)
+                if (tile.Sangre)
                 {
                     Matriz[y, x].Percepcion = TipoPercepcion.PRIORITARIO;
                     fronteraPrio.Add(new Pos(x, y));
@@ -99,21 +100,22 @@ public class ConocimientoAgente
                 //Si es segura, ya no me interesa saber más
                 else if (Matriz[y, x].Percepcion != TipoPercepcion.SEGURO)
                 {
-                    if (terreno == Terreno.TIERRA)
+                    if (tile.Barro)
+                    {
+                        Matriz[y, x].Percepcion = TipoPercepcion.RIESGO;
+                        fronteraSegura.Add(new Pos(x, y));
+
+                    }
+
+                    else
                     {
                         Matriz[y, x].Percepcion = TipoPercepcion.SEGURO;
                         fronteraRiesgo.Add(new Pos(x, y));
-
                     }
 
                     else if (Matriz[y, x].Percepcion != TipoPercepcion.RIESGO)
                     { 
-                        if (terreno == Terreno.BARRO)
-                        {
-                            Matriz[y, x].Percepcion = TipoPercepcion.RIESGO;
-                            fronteraSegura.Add(new Pos(x, y));
-
-                        }
+           
                     }
                 }
             }
@@ -128,7 +130,17 @@ public class ConocimientoAgente
     public Pos NextBestPos(Pos actualPos)
     {
         Pos nearest;
-        if (fronteraSegura.Count > 0)
+
+        if (fronteraPrio.Count > 0)
+        {
+            nearest = fronteraPrio
+            .OrderBy(t => t.ManhattanDistance(actualPos))
+            .FirstOrDefault();
+            fronteraPrio.Remove(nearest);
+
+        }
+
+        else if (fronteraSegura.Count > 0)
         {
             nearest = fronteraSegura
             .OrderBy(t => t.ManhattanDistance(actualPos))

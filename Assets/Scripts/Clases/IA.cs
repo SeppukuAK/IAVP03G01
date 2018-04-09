@@ -45,7 +45,7 @@ public class AEstrella
         return _camino;
     }
 
-    Percepcion[,] _world;
+    TilePercepcion[,] _world;
     Pos _posIni;
     Pos _posFin;
 
@@ -55,7 +55,7 @@ public class AEstrella
     const int maxWalkableTileNum = 0;
 
 
-    public AEstrella(Percepcion[,] world, Pos inicio, Pos fin)
+    public AEstrella(TilePercepcion[,] world, Pos inicio, Pos fin)
     {
         _world = world;
         _posIni = inicio;
@@ -95,7 +95,7 @@ public class AEstrella
     //Comprueba si el barco se puede mover a una posición determinada
     bool CanWalkHere(int x, int y)
     {
-        return (_world[y, x] <= maxWalkableTileNum);
+        return (_world[y, x].Percepcion == TipoPercepcion.EXPLORADO);
     }
 
     //Implementa el algoritmo A*

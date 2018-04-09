@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 
 //--------TIPOS---------
-public enum Terreno {TIERRA, BARRO, AGUJERO, SANGRE,SANGREBARRO, NULL};
 public enum Estado { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY};
 
 public enum EstadoAgente { EXPLORASEGURO, EXPLORARIESGO,BUSCACUERPO, BUSCAARMA, BUSCACRIMEN, PAUSA };
