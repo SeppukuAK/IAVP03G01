@@ -5,39 +5,52 @@ using System.Linq;
 
 public class ConocimientoAgente
 {
+    EstadoAgente Estado { get; set; }
 
-    public Percepcion[,] Matriz { get; set; }
+    public TilePercepcion[,] Matriz { get; set; }
 
+    List<Pos> fronteraPrio;
     List<Pos> fronteraSegura;
     List<Pos> fronteraRiesgo;
 
     public ConocimientoAgente(Tile tileIni)
     {
-        Matriz = new Percepcion[GameManager.ALTO, GameManager.ANCHO];
+        Matriz = new TilePercepcion[GameManager.ALTO, GameManager.ANCHO];
 
         for (int i = 0; i < GameManager.ALTO; i++)
         {
             for (int j = 0; j < GameManager.ANCHO; j++)
             {
-                Matriz[i, j] = Percepcion.INEXPLORADO;
+                Matriz[i, j] = new TilePercepcion();
             }
         }
 
-        Matriz[tileIni.pos.y, tileIni.pos.x] = Percepcion.EXPLORADO;
-
         fronteraSegura = new List<Pos>();
         fronteraRiesgo = new List<Pos>();
+        fronteraPrio = new List<Pos>();
 
-        ActualizaFrontera(tileIni);
+
+        ActualizaConocimiento(tileIni);
+
+        //COMPROBAR SI PASO A BUSCAARMA,BUSCACUERPO O BUSCA CRIMEN
+        if (fronteraPrio.Count > 0)
+            Estado = EstadoAgente.BUSCAARMA;
+
+        else if (fronteraSegura.Count > 0)
+            Estado = EstadoAgente.EXPLORASEGURO;
+        else if (fronteraRiesgo.Count > 0)
+            Estado = EstadoAgente.EXPLORARIESGO;
+
     }
 
     public void ActualizaConocimiento(Tile tile)
     {
-        Matriz[tile.pos.y, tile.pos.x] = Percepcion.EXPLORADO;
+        Matriz[tile.pos.y, tile.pos.x].Percepcion = TipoPercepcion.EXPLORADO;
 
         ActualizaFrontera(tile);
     }
 
+    //Llama a ActualizarPercepcion de todas las casillas adyacentes
     void ActualizaFrontera(Tile tile)
     {
         //Actualizo a la izquierda
@@ -67,26 +80,51 @@ public class ConocimientoAgente
         }
     }
 
+    //Actualiza la percepción de una casilla a segura, insegura o prioritaria
     void ActualizaPercepcion(Terreno terreno, int x, int y)
     {
-        //Si la casilla no ha sido explorada ni establecida como segura
-        if (Matriz[y, x] != Percepcion.EXPLORADO && Matriz[y, x] != Percepcion.SEGURO)
+        //Si la casilla no ha sido explorada
+        if (Matriz[y, x].Percepcion != TipoPercepcion.EXPLORADO)
         {
-            if ((terreno == Terreno.BARRO || terreno == Terreno.SANGREBARRO))
+            //Si la casilla no la he marcado ya como prioritaria
+            if (Matriz[y, x].Percepcion != TipoPercepcion.PRIORITARIO)
             {
-                Matriz[y, x] = Percepcion.RIESGO;
-                fronteraRiesgo.Add(new Pos(x, y));
+                if (terreno == Terreno.SANGRE)
+                {
+                    Matriz[y, x].Percepcion = TipoPercepcion.PRIORITARIO;
+                    fronteraPrio.Add(new Pos(x, y));
 
-            }
-            else
-            {
-                Matriz[y, x] = Percepcion.SEGURO;
-                fronteraSegura.Add(new Pos(x, y));
+                }
 
+                //Si es segura, ya no me interesa saber más
+                else if (Matriz[y, x].Percepcion != TipoPercepcion.SEGURO)
+                {
+                    if (terreno == Terreno.TIERRA)
+                    {
+                        Matriz[y, x].Percepcion = TipoPercepcion.SEGURO;
+                        fronteraRiesgo.Add(new Pos(x, y));
+
+                    }
+
+                    else if (Matriz[y, x].Percepcion != TipoPercepcion.RIESGO)
+                    { 
+                        if (terreno == Terreno.BARRO)
+                        {
+                            Matriz[y, x].Percepcion = TipoPercepcion.RIESGO;
+                            fronteraSegura.Add(new Pos(x, y));
+
+                        }
+                    }
+                }
             }
+
+
+
         }
+
     }
 
+    //Devuelve la siguiente mejor posición, teniendo en cuenta el estado en el que se encuentra
     public Pos NextBestPos(Pos actualPos)
     {
         Pos nearest;
@@ -95,13 +133,17 @@ public class ConocimientoAgente
             nearest = fronteraSegura
             .OrderBy(t => t.ManhattanDistance(actualPos))
             .FirstOrDefault();
+            fronteraSegura.Remove(nearest);
+
         }
         else
         {
             nearest = fronteraRiesgo
             .OrderBy(t => t.ManhattanDistance(actualPos))
             .FirstOrDefault();
+            fronteraRiesgo.Remove(nearest);
         }
+
 
         return nearest;
     }
