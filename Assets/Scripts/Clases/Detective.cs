@@ -24,8 +24,19 @@ public class Detective
         AEstrella A = new AEstrella(conocimientoAgente.Matriz, pos, nextPos);
 
         GameManager.instance.MoverAgente(A.GetCamino());
-
     }
 
+    public void VuelveACasa()
+    {
+        //SE HACE EL A ESTRELLA HASTA QUE LLEGUE A LA CASA
+        AEstrella Acasa = new AEstrella(conocimientoAgente.Matriz, pos, GameManager.instance.PosCasa);
+
+        GameManager.instance.MoverAgente(Acasa.GetCamino());
+    }
+
+    public bool ObjetivoCumplido()
+    {
+        return conocimientoAgente.ObjetivoCumplido;
+    }
 
 }

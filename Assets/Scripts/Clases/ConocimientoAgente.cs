@@ -43,6 +43,8 @@ public class ConocimientoAgente
     bool cuerpoEncontrado;
     bool armaEncontrada;
 
+    public bool ObjetivoCumplido { get; set; }
+
     public ConocimientoAgente(Tile tileIni)
     {
         Matriz = new TilePercepcion[GameManager.ALTO, GameManager.ANCHO];
@@ -55,7 +57,7 @@ public class ConocimientoAgente
             }
         }
 
-        cuerpoEncontrado = armaEncontrada = false;
+        cuerpoEncontrado = armaEncontrada = ObjetivoCumplido =  false;
 
         frontera = new List<NodoConocimiento>();
 
@@ -76,14 +78,21 @@ public class ConocimientoAgente
     public void ActualizaConocimiento(Tile tile)
     {
         if (tile.Arma)
+        {
             armaEncontrada = true;
+            GameManager.instance.RenderizaArma();
+        }
 
         else if (tile.Cadaver)
+        {
             cuerpoEncontrado = true;
+            GameManager.instance.RenderizaCadaver();
+
+        }
 
         if (armaEncontrada && cuerpoEncontrado)
         {
-            Debug.Log("HOLA");
+            ObjetivoCumplido = true;
         }
 
         

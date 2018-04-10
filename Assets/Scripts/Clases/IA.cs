@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 
 
-
 public class Nodo
 {
     private Nodo _padre;
@@ -116,29 +115,15 @@ public class AEstrella
 
 		while (true)
 		{
-			//UnityEngine.Debug.Log (frontera.Count ());
-
             if (frontera.Count() <= 0)
                 return null;
 
             //Encontramos el mejor nodo a expandir
-            int max = GameManager.ALTO* GameManager.ANCHO;
-            int min = -1;
-
-            for (int i = 0; i < frontera.Count; i++)
-            {
-                //Encontramos el nodo de coste menor
-                if (frontera[i].F < max)
-                {
-                    max = frontera[i].F;
-                    min = i;
-
-                }
-
-            }
+            Nodo nodoAux = frontera
+            .OrderBy(t => t.F)
+            .FirstOrDefault();
 
             //Cogemos el siguiente nodo y lo quitamos de la lista
-            Nodo nodoAux = frontera.ElementAt(min);
             frontera.Remove(nodoAux);
 
             //Comprobamos si este nodo es el destino
