@@ -113,8 +113,24 @@ public class ConocimientoAgente
                 //Todos los adyacentes son prioritarios seguros si no hay barro y estoy en sangre, en cadaver o en arma
                 if (!tile.Barro && (tile.Sangre || tile.Cadaver|| tile.Arma))
                 {
+                    Pos pos = new Pos(x, y);
+                    //La eliminamos de la lista anterior
+                    switch (Matriz[y, x].Percepcion)
+                    {
+                        case TipoPercepcion.SEGURO:
+                            if (fronteraSegura.Contains(pos))
+                                Debug.Log("hola");
+                            break;
+                        case TipoPercepcion.RIESGOPRIORITARIO:
+                            break;
+                        case TipoPercepcion.RIESGO:
+                            break;
+
+                    }
+
                     Matriz[y, x].Percepcion = TipoPercepcion.PRIORITARIO;
-                    fronteraPrio.Add(new Pos(x, y));
+                    fronteraPrio.Add(pos);
+
 
                 }
 
