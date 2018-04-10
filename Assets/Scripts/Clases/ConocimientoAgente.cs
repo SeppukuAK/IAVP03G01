@@ -110,28 +110,34 @@ public class ConocimientoAgente
             //Si la casilla ya es prioritaria, no hay nada mejor a ser prioritaria
             if (Matriz[y, x].Percepcion != TipoPercepcion.PRIORITARIO)
             {
+                Pos pos = new Pos(x, y);
                 //Todos los adyacentes son prioritarios seguros si no hay barro y estoy en sangre, en cadaver o en arma
                 if (!tile.Barro && (tile.Sangre || tile.Cadaver|| tile.Arma))
                 {
-                    Pos pos = new Pos(x, y);
                     //La eliminamos de la lista anterior
                     switch (Matriz[y, x].Percepcion)
                     {
                         case TipoPercepcion.SEGURO:
                             if (fronteraSegura.Contains(pos))
-                                Debug.Log("hola");
+                                fronteraSegura.Remove(pos);
+                            
                             break;
                         case TipoPercepcion.RIESGOPRIORITARIO:
+                            if (fronteraRiesgoPrio.Contains(pos))
+                                fronteraRiesgoPrio.Remove(pos);
                             break;
                         case TipoPercepcion.RIESGO:
+                            if (fronteraRiesgo.Contains(pos))
+                                fronteraRiesgo.Remove(pos);
+                            break;
+
+                        default:
                             break;
 
                     }
 
                     Matriz[y, x].Percepcion = TipoPercepcion.PRIORITARIO;
                     fronteraPrio.Add(pos);
-
-
                 }
 
                 //Si es segura, ya no me interesa saber más
@@ -140,6 +146,23 @@ public class ConocimientoAgente
                     //Si es tierra vacia
                     if (!tile.Barro && !tile.Sangre)
                     {
+                        //La eliminamos de la lista anterior
+                        switch (Matriz[y, x].Percepcion)
+                        {
+                            case TipoPercepcion.RIESGOPRIORITARIO:
+                                if (fronteraRiesgoPrio.Contains(pos))
+                                    fronteraRiesgoPrio.Remove(pos);
+                                break;
+                            case TipoPercepcion.RIESGO:
+                                if (fronteraRiesgo.Contains(pos))
+                                    fronteraRiesgo.Remove(pos);
+                                break;
+
+                            default:
+                                break;
+
+                        }
+
                         Matriz[y, x].Percepcion = TipoPercepcion.SEGURO;
                         fronteraSegura.Add(new Pos(x, y));
                     }
@@ -148,6 +171,18 @@ public class ConocimientoAgente
                     {
                         if (tile.Barro && (tile.Sangre || tile.Cadaver || tile.Arma))
                         {
+                            //La eliminamos de la lista anterior
+                            switch (Matriz[y, x].Percepcion)
+                            {
+                                case TipoPercepcion.RIESGO:
+                                    if (fronteraRiesgo.Contains(pos))
+                                        fronteraRiesgo.Remove(pos);
+                                    break;
+
+                                default:
+                                    break;
+
+                            }
                             Matriz[y, x].Percepcion = TipoPercepcion.RIESGOPRIORITARIO;
                             fronteraRiesgoPrio.Add(new Pos(x, y));
                        
@@ -156,7 +191,7 @@ public class ConocimientoAgente
                         //Ya está metido como Riesgo, no me interesa volver a meterlo
                         else if (Matriz[y, x].Percepcion != TipoPercepcion.RIESGO)
                         {
-                            Matriz[y, x].Percepcion = TipoPercepcion.RIESGOPRIORITARIO;
+                            Matriz[y, x].Percepcion = TipoPercepcion.RIESGO;
                             fronteraRiesgo.Add(new Pos(x, y));
                         }
 
