@@ -3,17 +3,42 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+ 
+
 public class ConocimientoAgente
 {
+    class NodoConocimiento
+    {
+        public NodoConocimiento(Pos pos, int coste)
+        {
+            Pos = pos;
+            Coste = coste;
+        }
+
+        public Pos Pos { get; set; }
+        public int Coste {get; set;}
+
+        public override bool Equals(object obj)
+        {
+            var conocimiento = obj as NodoConocimiento;
+            return conocimiento != null &&
+                   EqualityComparer<Pos>.Default.Equals(Pos, conocimiento.Pos);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 857480600;
+            hashCode = hashCode * -1521134295 + EqualityComparer<Pos>.Default.GetHashCode(Pos);
+            hashCode = hashCode * -1521134295 + Coste.GetHashCode();
+            return hashCode;
+        }
+    }
     EstadoAgente Estado { get; set; }
 
     public TilePercepcion[,] Matriz { get; set; }
 
     //Listas por orden de prioridad
-    List<Pos> fronteraPrio;
-    List<Pos> fronteraSegura;
-    List<Pos> fronteraRiesgoPrio;
-    List<Pos> fronteraRiesgo;
+    List<NodoConocimiento> frontera;
 
     bool cuerpoEncontrado;
     bool armaEncontrada;
@@ -32,13 +57,11 @@ public class ConocimientoAgente
 
         cuerpoEncontrado = armaEncontrada = false;
 
-        fronteraPrio = new List<Pos>();
-        fronteraSegura = new List<Pos>();
-        fronteraRiesgoPrio = new List<Pos>();
-        fronteraRiesgo = new List<Pos>();
+        frontera = new List<NodoConocimiento>();
 
         ActualizaConocimiento(tileIni);
 
+        /*
         //COMPROBAR SI PASO A BUSCAARMA,BUSCACUERPO O BUSCA CRIMEN
         if (fronteraPrio.Count > 0)
             Estado = EstadoAgente.BUSCAARMA;
@@ -47,7 +70,7 @@ public class ConocimientoAgente
             Estado = EstadoAgente.EXPLORASEGURO;
         else if (fronteraRiesgo.Count > 0)
             Estado = EstadoAgente.EXPLORARIESGO;
-
+            */
     }
 
     public void ActualizaConocimiento(Tile tile)
@@ -110,34 +133,16 @@ public class ConocimientoAgente
             //Si la casilla ya es prioritaria, no hay nada mejor a ser prioritaria
             if (Matriz[y, x].Percepcion != TipoPercepcion.PRIORITARIO)
             {
-                Pos pos = new Pos(x, y);
+                NodoConocimiento nodoConocimiento = new NodoConocimiento(new Pos(x, y),0);
                 //Todos los adyacentes son prioritarios seguros si no hay barro y estoy en sangre, en cadaver o en arma
                 if (!tile.Barro && (tile.Sangre || tile.Cadaver|| tile.Arma))
                 {
-                    //La eliminamos de la lista anterior
-                    switch (Matriz[y, x].Percepcion)
-                    {
-                        case TipoPercepcion.SEGURO:
-                            if (fronteraSegura.Contains(pos))
-                                fronteraSegura.Remove(pos);
-                            
-                            break;
-                        case TipoPercepcion.RIESGOPRIORITARIO:
-                            if (fronteraRiesgoPrio.Contains(pos))
-                                fronteraRiesgoPrio.Remove(pos);
-                            break;
-                        case TipoPercepcion.RIESGO:
-                            if (fronteraRiesgo.Contains(pos))
-                                fronteraRiesgo.Remove(pos);
-                            break;
-
-                        default:
-                            break;
-
-                    }
-
                     Matriz[y, x].Percepcion = TipoPercepcion.PRIORITARIO;
-                    fronteraPrio.Add(pos);
+                    if (frontera.Contains(nodoConocimiento))
+                        frontera.Remove(nodoConocimiento);
+
+                    nodoConocimiento.Coste = 1;
+                     frontera.Add(nodoConocimiento);
                 }
 
                 //Si es segura, ya no me interesa saber más
@@ -146,53 +151,38 @@ public class ConocimientoAgente
                     //Si es tierra vacia
                     if (!tile.Barro && !tile.Sangre)
                     {
-                        //La eliminamos de la lista anterior
-                        switch (Matriz[y, x].Percepcion)
-                        {
-                            case TipoPercepcion.RIESGOPRIORITARIO:
-                                if (fronteraRiesgoPrio.Contains(pos))
-                                    fronteraRiesgoPrio.Remove(pos);
-                                break;
-                            case TipoPercepcion.RIESGO:
-                                if (fronteraRiesgo.Contains(pos))
-                                    fronteraRiesgo.Remove(pos);
-                                break;
-
-                            default:
-                                break;
-
-                        }
 
                         Matriz[y, x].Percepcion = TipoPercepcion.SEGURO;
-                        fronteraSegura.Add(new Pos(x, y));
+
+                        if (frontera.Contains(nodoConocimiento))
+                            frontera.Remove(nodoConocimiento);
+                        nodoConocimiento.Coste = 10;
+                        frontera.Add(nodoConocimiento);
                     }
 
                     else if (Matriz[y, x].Percepcion != TipoPercepcion.RIESGOPRIORITARIO)
                     {
                         if (tile.Barro && (tile.Sangre || tile.Cadaver || tile.Arma))
                         {
-                            //La eliminamos de la lista anterior
-                            switch (Matriz[y, x].Percepcion)
-                            {
-                                case TipoPercepcion.RIESGO:
-                                    if (fronteraRiesgo.Contains(pos))
-                                        fronteraRiesgo.Remove(pos);
-                                    break;
 
-                                default:
-                                    break;
-
-                            }
                             Matriz[y, x].Percepcion = TipoPercepcion.RIESGOPRIORITARIO;
-                            fronteraRiesgoPrio.Add(new Pos(x, y));
-                       
+
+                            if (frontera.Contains(nodoConocimiento))
+                                frontera.Remove(nodoConocimiento);
+                            nodoConocimiento.Coste = 100;
+                            frontera.Add(nodoConocimiento);
+
                         }
 
                         //Ya está metido como Riesgo, no me interesa volver a meterlo
                         else if (Matriz[y, x].Percepcion != TipoPercepcion.RIESGO)
                         {
                             Matriz[y, x].Percepcion = TipoPercepcion.RIESGO;
-                            fronteraRiesgo.Add(new Pos(x, y));
+
+                            if (frontera.Contains(nodoConocimiento))
+                                frontera.Remove(nodoConocimiento);
+                            nodoConocimiento.Coste = 200;
+                            frontera.Add(nodoConocimiento);
                         }
 
                     }
@@ -206,43 +196,12 @@ public class ConocimientoAgente
     //Devuelve la siguiente mejor posición, teniendo en cuenta el estado en el que se encuentra
     public Pos NextBestPos(Pos actualPos)
     {
-        Pos nearest;
-
-        if (fronteraPrio.Count > 0)
-        {
-            nearest = fronteraPrio
-            .OrderBy(t => t.ManhattanDistance(actualPos))
+        NodoConocimiento nearest = nearest = frontera
+            .OrderBy(t => t.Pos.ManhattanDistance(actualPos) + t.Coste)
             .FirstOrDefault();
-            fronteraPrio.Remove(nearest);
+            frontera.Remove(nearest);
 
-        }
-
-        else if (fronteraSegura.Count > 0)
-        {
-            nearest = fronteraSegura
-            .OrderBy(t => t.ManhattanDistance(actualPos))
-            .FirstOrDefault();
-            fronteraSegura.Remove(nearest);
-
-        }
-
-        else if (fronteraRiesgoPrio.Count > 0)
-        {
-            nearest = fronteraRiesgoPrio
-            .OrderBy(t => t.ManhattanDistance(actualPos))
-            .FirstOrDefault();
-            fronteraRiesgoPrio.Remove(nearest);
-        }
-
-        else
-        {
-            nearest = fronteraRiesgo
-            .OrderBy(t => t.ManhattanDistance(actualPos))
-            .FirstOrDefault();
-            fronteraRiesgo.Remove(nearest);
-        }
-
-        return nearest;
+        return nearest.Pos;
     }
 
 }

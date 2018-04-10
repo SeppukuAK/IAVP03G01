@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
     public const int ANCHO = 10;
     public const int ALTO = 5;
     public const int NUMAGUJEROS = 3;
-    public const float DISTANCIA = 0.70f;
+    public const float DISTANCIA = 0.64f;
 
     Tablero tablero;
    
@@ -154,6 +154,8 @@ public class GameManager : MonoBehaviour
                 }
 
             }
+            MatrizTiles[PosCasa.y, PosCasa.x].GetComponent<SpriteRenderer>().color = Color.white;
+
             armaGO.GetComponent<SpriteRenderer>().color = Color.black;
             cadaverGO.GetComponent<SpriteRenderer>().color = Color.black;
         }
@@ -185,10 +187,7 @@ public class GameManager : MonoBehaviour
 
         agente.AvanzaAPos();
 
-    
-
-
-
+   
     }
 
     //Necesario para conocimientoAgente
@@ -208,6 +207,7 @@ public class GameManager : MonoBehaviour
 
     IEnumerator AvanzaUnPaso(Stack<Pos> camino)
     {
+        Button.gameObject.SetActive(false);
         while (camino.Count > 0)
         {
             Pos pos = camino.Pop();
@@ -215,9 +215,10 @@ public class GameManager : MonoBehaviour
             agente.pos = pos;
             agenteGO.transform.position = new Vector3(pos.x * DISTANCIA, -pos.y * DISTANCIA, 0);
 
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.2f);
 
         }
+        Button.gameObject.SetActive(true);
 
     }
 
@@ -225,7 +226,5 @@ public class GameManager : MonoBehaviour
     public void Renderiza (Pos pos)
     {
         MatrizTiles[pos.y, pos.x].GetComponent<SpriteRenderer>().color = Color.white;
-
     }
-
 }
