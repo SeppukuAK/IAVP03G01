@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 
 //Enumerado que controla los distintos estados del juego
-public enum EstadoEscena { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY };
+public enum EstadoEscena { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY,FIN };
 
 /// <summary>
 /// Componente encargado de generar el tablero, crear y gestionar todos los objetos y su comportamiento. 
@@ -80,6 +80,7 @@ public class GameManager : MonoBehaviour
     float timer;
     float ms;
 
+    private bool haciendoCamino = false;//booleana que actúa como "cerrojo" avisando a la corrutina ContinuaBúsqueda cuándo ha terminado la corrutina AvanzaUnPaso
 
     //--------ATRIBUTOS UNITY--------------
 
@@ -125,12 +126,30 @@ public class GameManager : MonoBehaviour
             timer += Time.deltaTime;
             ms = (timer % 60) * 1000;
 
-            EscribeTiempoHastaCasa();
+            TextoRelojHastaCasa.text = "Tiempo hasta la casa: " + ms + "ms";
         }
 
         if (RelojActivoHastaCadaver)
-            EscribeTiempoHastaCadaver();
+            TextoRelojHastaCadaver.text = "Tiempo hasta el cadáver: " + ms + "ms";
 
+        //El agente avanza en caso de no haber llegado al objetivo, haber muerto y encontrarse en el estado PLAY
+
+        if (Estado == EstadoEscena.PLAY && !haciendoCamino)
+        {
+            if (!agente.AgenteMuerto())
+            {
+
+                haciendoCamino = true;
+                agente.Avanza();//Avisamos al agente para que avance
+
+                //Avanzan los pasos hacia del cadaver y hacia casa
+                nodosAbiertos++;
+
+                TextoNodosAbiertos.text = "Número de nodos abiertos : " + nodosAbiertos;
+            }
+
+
+        }
 
     }
 
@@ -306,7 +325,6 @@ public class GameManager : MonoBehaviour
         armaGO.GetComponent<SpriteRenderer>().enabled = false;
         cadaverGO.GetComponent<SpriteRenderer>().enabled = false;
 
-        StartCoroutine("ContinuaBusqueda");
     }
 
 
@@ -315,18 +333,21 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void PausaReanudaBusqueda()
     {
-        if (Estado == EstadoEscena.PLAY)
+        if (Estado == EstadoEscena.PLAY || Estado == EstadoEscena.FIN)
         {
             Estado = EstadoEscena.PAUSA;
             TextoBoton.text = "Reanudar";
             RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
         }
-        else
+        else if (Estado == EstadoEscena.PAUSA)
         {
-            Estado = EstadoEscena.PLAY;
+            if (!agente.ObjetivoCumplido())
+                Estado = EstadoEscena.PLAY;
+            else
+                Estado = EstadoEscena.FIN;
+
             TextoBoton.text = "Pausa";
             RelojActivoHastaCasa = RelojActivoHastaCadaver = true;
-            StartCoroutine("ContinuaBusqueda");
         }
 
     }
@@ -340,58 +361,6 @@ public class GameManager : MonoBehaviour
 
     }
     //-------CALLBACKS DE BOTONES-------------------//
-
-    private bool haciendoCamino = false;//booleana que actúa como "cerrojo" avisando a la corrutina ContinuaBúsqueda cuándo ha terminado la corrutina AvanzaUnPaso
-
-    /// <summary>
-    /// Corrutina usada para que el agente vaya avanzando cada x tiempo. Espera a que la corrutina AvanzaUnPaso acabe de realizar el algoritmo para volver a ejecutarse
-    /// La corrutina AvanzaUnPaso indica a este método que ha acabado poniendo haciendoCamino a false
-    /// </summary>
-    IEnumerator ContinuaBusqueda()
-    {
-        //El agente avanza en caso de no haber llegado al objetivo, haber muerto y encontrarse en el estado PLAY
-        while (!agente.ObjetivoCumplido() && !agente.AgenteMuerto() && Estado == EstadoEscena.PLAY)
-        {
-            //Caso en el que el agente avanza un paso
-            if (!haciendoCamino)
-            {
-                haciendoCamino = true;
-                agente.Avanza();//Avisamos al agente para que avance
-
-                //Avanzan los pasos hacia del cadaver y hacia casa
-                pasosHastaCasa++;
-                nodosAbiertos++;
-
-                EscribePasosHastaCasa();
-                EscribePasosHastaCadaver();
-            }
-            yield return new WaitForSeconds(0.016f);
-
-        }
-
-        //Mantenemos esta corrutina en espera hasta que acabe la corrutina de AvanzaUnPaso
-        while (haciendoCamino)
-
-            yield return new WaitForSeconds(0.016f);
-
-
-        //Caso en el que el agente, sabiendo la ubicación del arma y el cadáver, vuelve a casa
-        if (agente.ObjetivoCumplido())
-        {
-            agente.VuelveACasa();
-            RelojActivoHastaCadaver = false;
-
-        }
-        //Texto mostrado si el agente cae por un agujero
-        else if (agente.AgenteMuerto())
-        {
-            TextoMensaje.text = "El agente ha fallado en su misión";
-            RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
-        }
-
-        yield return null;
-
-    }
 
 
     /// <summary>
@@ -421,13 +390,15 @@ public class GameManager : MonoBehaviour
     IEnumerator AvanzaUnPaso(Stack<Pos> camino)
     {
         Pos pos = new Pos(0, 0);
+        pasosHastaCasa--;
+
         while (camino.Count > 0)
         {
             pos = camino.Pop();
 
             //Pasos totales
             pasosHastaCasa++;
-            EscribePasosHastaCasa();
+            TextoPasosHastaCasa.text = "Pasos hasta la casa: " + pasosHastaCasa;
 
             //Movemos al agente
             agente.Pos = pos;
@@ -437,8 +408,10 @@ public class GameManager : MonoBehaviour
         }
 
         //Comprobamos si se ha llegado a casa
-        if (agente.ObjetivoCumplido() && HayCasa(pos))
+        if (HayCasa(pos))
+        {
             RelojActivoHastaCasa = false;
+        }
 
         //Comprobamos si se ha encontrado el cadáver
         if (agente.CuerpoEncontrado())
@@ -451,34 +424,30 @@ public class GameManager : MonoBehaviour
             IconoArma.enabled = true;
         }
 
+        //Comprobamos si ha encontrado cadaver y arma
+        if (Estado != EstadoEscena.FIN && agente.ObjetivoCumplido())
+        {
+            agente.VuelveACasa();
+            RelojActivoHastaCadaver = false;
+            Estado = EstadoEscena.FIN;
+            ButtonPausaBusqueda.gameObject.SetActive(false);
+        }
+
+        //Comprobamos si el agente ha muerto
+        if (agente.AgenteMuerto())
+        {
+            ButtonPausaBusqueda.gameObject.SetActive(false);
+            TextoMensaje.text = "El agente ha fallado en su misión";
+            RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
+        }
+
         //Iluminamos esa casilla visitada
         MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().color = Color.white;
 
-        //Avisamos a ContinuaBúsqueda de que esta corrutina ha terminado
-
+        //Avisamos a Update de que esta corrutina ha terminado
         haciendoCamino = false;
+
         yield return null;
-    }
-
-    //Cambiar
-    public void EscribeTiempoHastaCasa()
-    {
-        TextoRelojHastaCasa.text = "Tiempo hasta la casa: " + ms + "ms";
-    }
-
-    //Cambiar
-    public void EscribeTiempoHastaCadaver()
-    {
-        TextoRelojHastaCadaver.text = "Tiempo hasta el cadáver: " + ms + "ms";
-    }
-
-    public void EscribePasosHastaCasa()
-    {
-        TextoPasosHastaCasa.text = "Pasos hasta la casa: " + pasosHastaCasa;
-    }
-    public void EscribePasosHastaCadaver()
-    {
-        TextoNodosAbiertos.text = "Número de nodos abiertos : " + nodosAbiertos;
     }
 
     public void AumentaNumVecesArriesgadas()

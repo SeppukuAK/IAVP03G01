@@ -56,11 +56,7 @@ public class IAAgente
 
     List<NodoAgente> frontera;
 
-
-
     public EstadoAgente Estado { get; set; }
-
-
 
 
     public IAAgente(Tile tileIni)
