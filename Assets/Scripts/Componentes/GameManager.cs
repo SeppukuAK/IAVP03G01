@@ -46,8 +46,9 @@ public class GameManager : MonoBehaviour
     public Text TextoRelojHastaCasa;
     public Text TextoRelojHastaCadaver;
     public Text TextoPasosHastaCasa;
-    public Text TextoPasosHastaCadaver;
+    public Text TextoNodosAbiertos;
     public Text TextoBoton;
+    public Text TextoNumeroArriesgos;
 
 
     //--------ATRIBUTOS UNITY--------
@@ -71,13 +72,14 @@ public class GameManager : MonoBehaviour
     private GameObject cadaverGO;
     private GameObject[,] MatrizTiles { get; set; }//matriz de GO tiles
 
-   
-    private int pasosHastaCadaver, pasosHastaCasa;
+
+    //Estadisticas
+    private int nodosAbiertos, pasosHastaCasa;
     private int numVecesArriesgadas;
 
     float timer;
     float ms;
-     
+
 
     //--------ATRIBUTOS UNITY--------------
 
@@ -97,7 +99,7 @@ public class GameManager : MonoBehaviour
 
         RelojActivoHastaCasa = RelojActivoHastaCadaver = VueltaACasa = false;
 
-        numVecesArriesgadas = pasosHastaCadaver = 0;
+        numVecesArriesgadas = nodosAbiertos = 0;
 
         //Inicializamos los botones al inicio desactivados
         ButtonComienzaBusqueda.gameObject.SetActive(false);
@@ -126,10 +128,10 @@ public class GameManager : MonoBehaviour
             EscribeTiempoHastaCasa();
         }
 
-        if (RelojActivoHastaCadaver)       
-            EscribeTiempoHastaCadaver();         
-        
-         
+        if (RelojActivoHastaCadaver)
+            EscribeTiempoHastaCadaver();
+
+
     }
 
     /// <summary>
@@ -153,8 +155,9 @@ public class GameManager : MonoBehaviour
             }
 
         }
+        PosCasa = new Pos(8, 0);
 
-        PosCasa = new Pos(Random.Range(0, ANCHO), Random.Range(0, ALTO));
+        //PosCasa = new Pos(Random.Range(0, ANCHO), Random.Range(0, ALTO));
         GameObject casa = Instantiate(casaPrefab, new Vector3(PosCasa.X * DISTANCIA, -PosCasa.Y * DISTANCIA, 0), Quaternion.identity);
     }
 
@@ -226,7 +229,7 @@ public class GameManager : MonoBehaviour
     /// <param name="pos"></param>
     public void ColocaAgujero(Pos pos)
     {
-        tablero.ColocaAgujero(pos.X,pos.Y); //coloca el agujero en la matriz logica
+        tablero.ColocaAgujero(pos.X, pos.Y); //coloca el agujero en la matriz logica
 
         //Aplicamos el sprite
         MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().sprite = spriteAgujero;
@@ -237,12 +240,12 @@ public class GameManager : MonoBehaviour
     /// </summary>
     /// <param name="x"></param>
     /// <param name="y"></param>
-    public void ColocaSpriteBarro(int x, int y) 
+    public void ColocaSpriteBarro(int x, int y)
     {
         //Hacemos la distinción entre si la casilla es barro o barro con sangre
-        if (tablero.Matriz[y, x].Sangre)                 
-            MatrizTiles[y, x].GetComponent<SpriteRenderer>().sprite = spriteSangreBarro;         
-        
+        if (tablero.Matriz[y, x].Sangre)
+            MatrizTiles[y, x].GetComponent<SpriteRenderer>().sprite = spriteSangreBarro;
+
 
         else
             MatrizTiles[y, x].GetComponent<SpriteRenderer>().sprite = spriteBarro;
@@ -272,6 +275,7 @@ public class GameManager : MonoBehaviour
         Estado = EstadoEscena.PLAY;
         RelojActivoHastaCasa = RelojActivoHastaCadaver = true;
         TextoMensaje.text = "";
+        TextoNumeroArriesgos.text = "Número de veces arriesgadas: 0";
 
         //Desactivamos el botón de ComienzaBúsqueda ya que ya no estamos en modo edición del mapa
         ButtonComienzaBusqueda.gameObject.SetActive(false);
@@ -315,7 +319,7 @@ public class GameManager : MonoBehaviour
         {
             Estado = EstadoEscena.PAUSA;
             TextoBoton.text = "Reanudar";
-            RelojActivoHastaCasa =  RelojActivoHastaCadaver = false;
+            RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
         }
         else
         {
@@ -346,45 +350,45 @@ public class GameManager : MonoBehaviour
     IEnumerator ContinuaBusqueda()
     {
         //El agente avanza en caso de no haber llegado al objetivo, haber muerto y encontrarse en el estado PLAY
-        while (!agente.ObjetivoCumplido() && !agente.AgenteMuerto() && Estado == EstadoEscena.PLAY )
+        while (!agente.ObjetivoCumplido() && !agente.AgenteMuerto() && Estado == EstadoEscena.PLAY)
         {
             //Caso en el que el agente avanza un paso
             if (!haciendoCamino)
             {
-                haciendoCamino = true;              
+                haciendoCamino = true;
                 agente.Avanza();//Avisamos al agente para que avance
 
                 //Avanzan los pasos hacia del cadaver y hacia casa
                 pasosHastaCasa++;
-                pasosHastaCadaver++;
-           
+                nodosAbiertos++;
+
                 EscribePasosHastaCasa();
                 EscribePasosHastaCadaver();
             }
-            yield return new WaitForSeconds(0.000000001f);
+            yield return new WaitForSeconds(0.016f);
 
         }
 
         //Mantenemos esta corrutina en espera hasta que acabe la corrutina de AvanzaUnPaso
-        while (haciendoCamino)       
-           
+        while (haciendoCamino)
+
             yield return new WaitForSeconds(0.016f);
-        
+
 
         //Caso en el que el agente, sabiendo la ubicación del arma y el cadáver, vuelve a casa
         if (agente.ObjetivoCumplido())
         {
             agente.VuelveACasa();
             RelojActivoHastaCadaver = false;
-           
+
         }
         //Texto mostrado si el agente cae por un agujero
         else if (agente.AgenteMuerto())
         {
             TextoMensaje.text = "El agente ha fallado en su misión";
-            RelojActivoHastaCasa = RelojActivoHastaCadaver =  false;
+            RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
         }
-        
+
         yield return null;
 
     }
@@ -406,11 +410,7 @@ public class GameManager : MonoBehaviour
     public void MoverAgente(Stack<Pos> camino)
     {
         if (camino != null)
-        {
             StartCoroutine("AvanzaUnPaso", camino);
-
-        }
-
     }
 
     /// <summary>
@@ -420,23 +420,18 @@ public class GameManager : MonoBehaviour
     /// <param name="camino"></param>
     IEnumerator AvanzaUnPaso(Stack<Pos> camino)
     {
-        Pos pos = new Pos(0,0);
+        Pos pos = new Pos(0, 0);
         while (camino.Count > 0)
         {
             pos = camino.Pop();
 
-            if (VueltaACasa)
-            {
-                pasosHastaCasa++;
-                EscribePasosHastaCasa();
-
-            }
-
             //Pasos totales
+            pasosHastaCasa++;
+            EscribePasosHastaCasa();
 
             //Movemos al agente
             agente.Pos = pos;
-            agenteGO.transform.position = new Vector3(pos.X * DISTANCIA, -pos.Y * DISTANCIA, 0);      
+            agenteGO.transform.position = new Vector3(pos.X * DISTANCIA, -pos.Y * DISTANCIA, 0);
 
             yield return new WaitForSeconds(0.5f);
         }
@@ -460,7 +455,7 @@ public class GameManager : MonoBehaviour
         MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().color = Color.white;
 
         //Avisamos a ContinuaBúsqueda de que esta corrutina ha terminado
-       
+
         haciendoCamino = false;
         yield return null;
     }
@@ -483,11 +478,13 @@ public class GameManager : MonoBehaviour
     }
     public void EscribePasosHastaCadaver()
     {
-        TextoPasosHastaCadaver.text = "Pasos hasta el cadáver: " + pasosHastaCadaver;
+        TextoNodosAbiertos.text = "Número de nodos abiertos : " + nodosAbiertos;
     }
 
     public void AumentaNumVecesArriesgadas()
     {
+        numVecesArriesgadas++;
+        TextoNumeroArriesgos.text = "Número de veces arriesgadas: " + numVecesArriesgadas;
 
     }
 }

@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
 /// Estado de búsqueda del agente
 /// </summary>
-public enum EstadoAgente { BUSQUEDA, BUSCAARMA, BUSCACUERPO, BUSQUEDATERMINADA,MUERTO };
+public enum EstadoAgente { BUSQUEDA, BUSCAARMA, BUSCACUERPO, BUSQUEDATERMINADA, MUERTO };
 
 /// <summary>
 /// Guarda la percepción del agente del mundo. Actua como un agente inteligente y siempre avanza a la mejor posición
@@ -46,16 +47,21 @@ public class IAAgente
         }
     }
 
+    private const int VALORPRIORITARIO = 5 * 5 * 5;
+    private const int VALORSEGURO = 5 * 5 * 5 * 5 * 5 * 5;
+    private const int VALORRIESGOPRIORITARIO = 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5;
+    private const int VALORRIESGO = 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5;
+
     public TipoPercepcion[,] MatrizPercepcion { get; set; }
 
     List<NodoAgente> frontera;
-    
+
 
 
     public EstadoAgente Estado { get; set; }
 
 
-       
+
 
     public IAAgente(Tile tileIni)
     {
@@ -121,8 +127,8 @@ public class IAAgente
     void ActualizaFrontera(Tile tile)
     {
         //Actualizo a la izquierda
-        if (tile.Pos.X > 0 )
-            ActualizaPercepcion(tile, tile.Pos.X -1, tile.Pos.Y);
+        if (tile.Pos.X > 0)
+            ActualizaPercepcion(tile, tile.Pos.X - 1, tile.Pos.Y);
 
         //Actualizo a la derecha
         if (tile.Pos.X < GameManager.ANCHO - 1)
@@ -141,7 +147,8 @@ public class IAAgente
     /// <summary>
     /// Actualiza la percepción de un tile, teniendo en cuenta si la casilla es explorada, prioritaria, prioritaria con riesgo o segura
     /// Primero damos mayor importancia a las casillas que pueden ser prioritarias y que no lo son. Estas casillas son: cadaver, arma y sangre
-    /// Si el tile pertenece a alguno de esos tipos lo marcamos como prioritario
+    /// Si el tile pertenece a alguno de esos tipos lo marcamos como prioritario, luego si es tierra, lo marcamos como seguro, si es barro/sangre, lo marcamos
+    /// como riesgo prioritario y si es barro, lo marcamos como riesgo
     /// </summary>
     /// <param name="tile"></param>
     /// <param name="x"></param>
@@ -152,21 +159,29 @@ public class IAAgente
         //Si la casilla no ha sido explorada
         if (MatrizPercepcion[y, x] != TipoPercepcion.EXPLORADO) //IF COMPROBACION EXPLORADO
         {
-            //Si la casilla ya es prioritaria, no hay nada mejor a ser prioritaria
-            if (MatrizPercepcion[y, x] != TipoPercepcion.PRIORITARIO) //IF COMPROBACION PRIORITARIO
+            NodoAgente nodoAgente = new NodoAgente(new Pos(x, y), 0);
+
+            if (MatrizPercepcion[y, x] == TipoPercepcion.PRIORITARIO)
             {
-                NodoAgente nodoAgente = new NodoAgente(new Pos(x, y),0);
+                nodoAgente = frontera.Find(t => t.Equals(nodoAgente));
+                nodoAgente.Coste /= 5;
+            }
+
+            //Si la casilla ya es prioritaria, no hay nada mejor a ser prioritaria
+            else if (MatrizPercepcion[y, x] != TipoPercepcion.PRIORITARIO) //IF COMPROBACION PRIORITARIO
+            {
 
                 //Todos los adyacentes son prioritarios seguros si no hay barro y estoy en sangre, en cadaver o en arma
-                if (!tile.Barro && (tile.Sangre || tile.Cadaver|| tile.Arma))
+                if (!tile.Barro && (tile.Sangre || tile.Cadaver || tile.Arma))
                 {
                     MatrizPercepcion[y, x] = TipoPercepcion.PRIORITARIO;
                     if (frontera.Contains(nodoAgente))
                         frontera.Remove(nodoAgente);
 
-                    nodoAgente.Coste = 1;
-                     frontera.Add(nodoAgente);
+                    nodoAgente.Coste = VALORPRIORITARIO;
+                    frontera.Add(nodoAgente);
                 }
+
 
                 //Si es segura, ya no me interesa saber más
                 else if (MatrizPercepcion[y, x] != TipoPercepcion.SEGURO) //IF COMPROBACION SEGURO
@@ -178,33 +193,40 @@ public class IAAgente
 
                         if (frontera.Contains(nodoAgente))
                             frontera.Remove(nodoAgente);
-                        nodoAgente.Coste = 10;
-                            frontera.Add(nodoAgente);
+                        nodoAgente.Coste = VALORSEGURO;
+                        frontera.Add(nodoAgente);
                     }
 
                     //Si es riesgoPrioritario, no me interesa saber si me he encontrado un riesgoPrioritario o riesgo
                     else if (MatrizPercepcion[y, x] != TipoPercepcion.RIESGOPRIORITARIO)//IF COMPROBACION RIESGO PRIORITARIO
-                    {   
+                    {
                         if (tile.Barro && (tile.Sangre || tile.Cadaver || tile.Arma))
                         {
                             MatrizPercepcion[y, x] = TipoPercepcion.RIESGOPRIORITARIO;
-  
+
                             if (frontera.Contains(nodoAgente))
                                 frontera.Remove(nodoAgente);
 
-                            nodoAgente.Coste = 100;
+                            nodoAgente.Coste = VALORRIESGOPRIORITARIO;
                             frontera.Add(nodoAgente);
 
                         }
 
+                        else if (MatrizPercepcion[y, x] == TipoPercepcion.RIESGO)
+                        {
+                            nodoAgente = frontera.Find(t => t.Equals(nodoAgente));
+                            nodoAgente.Coste *= 5;
+                        }
+
                         //Ya está metido como Riesgo, no me interesa volver a meterlo
                         else if (MatrizPercepcion[y, x] != TipoPercepcion.RIESGO)//IF COMPROBACION RIESGO 
-                        {   
+                        {
                             MatrizPercepcion[y, x] = TipoPercepcion.RIESGO;
 
                             if (frontera.Contains(nodoAgente))
                                 frontera.Remove(nodoAgente);
-                            nodoAgente.Coste = 200;
+
+                            nodoAgente.Coste = VALORRIESGO;
                             frontera.Add(nodoAgente);
 
                         }//IF COMPROBACION RIESGO 
@@ -229,10 +251,10 @@ public class IAAgente
         NodoAgente nearest = nearest = frontera
             .OrderBy(t => t.Pos.ManhattanDistance(actualPos) + t.Coste)
             .FirstOrDefault();
-            frontera.Remove(nearest);
+        frontera.Remove(nearest);
 
-        //if (nearest > 100)
-            //GameManager.instance.AumentaNumVecesArriesgadas();
+        if (nearest.Coste >= VALORRIESGOPRIORITARIO)
+            GameManager.instance.AumentaNumVecesArriesgadas();
 
         return nearest.Pos;
     }
