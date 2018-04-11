@@ -42,7 +42,6 @@ public class Agente
         //A* hasta la nueva pos
         AEstrella Acasa = new AEstrella(IAAgente.MatrizPercepcion, Pos, GameManager.instance.PosCasa);
 
-        GameManager.instance.VueltaACasa = true;
         //Informamos al GameManager de que empiece la corrutina
         GameManager.instance.MoverAgente(Acasa.Camino);
     }
@@ -56,18 +55,12 @@ public class Agente
         return IAAgente.Estado == EstadoAgente.BUSQUEDATERMINADA;
     }
 
-    public bool AgenteMuerto()
-    {
-        return IAAgente.Estado == EstadoAgente.MUERTO;
-    }
-
     public bool ArmaEncontrada()
     {
-        return (IAAgente.Estado == EstadoAgente.BUSCACUERPO || IAAgente.Estado == EstadoAgente.BUSQUEDATERMINADA);
+        return (IAAgente.Estado == EstadoAgente.BUSQUEDATERMINADA || IAAgente.Estado == EstadoAgente.BUSCACUERPO) ;
     }
-
     public bool CuerpoEncontrado()
     {
-        return (IAAgente.Estado == EstadoAgente.BUSCAARMA || IAAgente.Estado == EstadoAgente.BUSQUEDATERMINADA);
+        return (IAAgente.Estado == EstadoAgente.BUSQUEDATERMINADA || IAAgente.Estado == EstadoAgente.BUSCAARMA);
     }
 }

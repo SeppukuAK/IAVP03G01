@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 
 //Enumerado que controla los distintos estados del juego
-public enum EstadoEscena { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY,FIN };
+public enum EstadoEscena { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY, VUELTA, FIN };
 
 /// <summary>
 /// Componente encargado de generar el tablero, crear y gestionar todos los objetos y su comportamiento. 
@@ -19,7 +19,6 @@ public class GameManager : MonoBehaviour
     //--------ATRIBUTOS--------------
 
     //--------ATRIBUTOS UNITY--------
-
     //Game Objects
     public GameObject tilePrefab;
     public GameObject casaPrefab;
@@ -64,8 +63,6 @@ public class GameManager : MonoBehaviour
 
     private Tablero tablero;
     private Agente agente;
-    private bool RelojActivoHastaCasa, RelojActivoHastaCadaver;
-    public bool VueltaACasa;
 
     private GameObject agenteGO;
     private GameObject armaGO;
@@ -96,11 +93,10 @@ public class GameManager : MonoBehaviour
         //Inicializar GUI
         IconoArma.enabled = false;
 
+        //Estadísticas
         timer = ms = 0.0f;
-
-        RelojActivoHastaCasa = RelojActivoHastaCadaver = VueltaACasa = false;
-
         numVecesArriesgadas = nodosAbiertos = 0;
+
 
         //Inicializamos los botones al inicio desactivados
         ButtonComienzaBusqueda.gameObject.SetActive(false);
@@ -120,8 +116,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-
-        if (RelojActivoHastaCasa)
+        if (Estado == EstadoEscena.PLAY || Estado == EstadoEscena.VUELTA)
         {
             timer += Time.deltaTime;
             ms = (timer % 60) * 1000;
@@ -129,26 +124,24 @@ public class GameManager : MonoBehaviour
             TextoRelojHastaCasa.text = "Tiempo hasta la casa: " + ms + "ms";
         }
 
-        if (RelojActivoHastaCadaver)
+        if (Estado == EstadoEscena.PLAY)
+        {
             TextoRelojHastaCadaver.text = "Tiempo hasta el cadáver: " + ms + "ms";
+        }
+
+
 
         //El agente avanza en caso de no haber llegado al objetivo, haber muerto y encontrarse en el estado PLAY
 
         if (Estado == EstadoEscena.PLAY && !haciendoCamino)
         {
-            if (!agente.AgenteMuerto())
-            {
+            haciendoCamino = true;
+            agente.Avanza();//Avisamos al agente para que avance
 
-                haciendoCamino = true;
-                agente.Avanza();//Avisamos al agente para que avance
+            //Avanzan los pasos hacia del cadaver y hacia casa
+            nodosAbiertos++;
 
-                //Avanzan los pasos hacia del cadaver y hacia casa
-                nodosAbiertos++;
-
-                TextoNodosAbiertos.text = "Número de nodos abiertos : " + nodosAbiertos;
-            }
-
-
+            TextoNodosAbiertos.text = "Número de nodos abiertos : " + nodosAbiertos;
         }
 
     }
@@ -174,9 +167,9 @@ public class GameManager : MonoBehaviour
             }
 
         }
-        PosCasa = new Pos(8, 0);
+        //PosCasa = new Pos(8, 0);
 
-        //PosCasa = new Pos(Random.Range(0, ANCHO), Random.Range(0, ALTO));
+        PosCasa = new Pos(Random.Range(0, ANCHO), Random.Range(0, ALTO));
         GameObject casa = Instantiate(casaPrefab, new Vector3(PosCasa.X * DISTANCIA, -PosCasa.Y * DISTANCIA, 0), Quaternion.identity);
     }
 
@@ -292,7 +285,6 @@ public class GameManager : MonoBehaviour
     public void IniciaBusqueda()
     {
         Estado = EstadoEscena.PLAY;
-        RelojActivoHastaCasa = RelojActivoHastaCadaver = true;
         TextoMensaje.text = "";
         TextoNumeroArriesgos.text = "Número de veces arriesgadas: 0";
 
@@ -333,21 +325,15 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void PausaReanudaBusqueda()
     {
-        if (Estado == EstadoEscena.PLAY || Estado == EstadoEscena.FIN)
+        if (Estado == EstadoEscena.PLAY)
         {
             Estado = EstadoEscena.PAUSA;
             TextoBoton.text = "Reanudar";
-            RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
         }
         else if (Estado == EstadoEscena.PAUSA)
         {
-            if (!agente.ObjetivoCumplido())
-                Estado = EstadoEscena.PLAY;
-            else
-                Estado = EstadoEscena.FIN;
-
+            Estado = EstadoEscena.PLAY;
             TextoBoton.text = "Pausa";
-            RelojActivoHastaCasa = RelojActivoHastaCadaver = true;
         }
 
     }
@@ -390,11 +376,14 @@ public class GameManager : MonoBehaviour
     IEnumerator AvanzaUnPaso(Stack<Pos> camino)
     {
         Pos pos = new Pos(0, 0);
-        pasosHastaCasa--;
+        camino.Pop();
 
         while (camino.Count > 0)
         {
             pos = camino.Pop();
+
+            yield return new WaitForSeconds(0.5f);
+
 
             //Pasos totales
             pasosHastaCasa++;
@@ -404,45 +393,34 @@ public class GameManager : MonoBehaviour
             agente.Pos = pos;
             agenteGO.transform.position = new Vector3(pos.X * DISTANCIA, -pos.Y * DISTANCIA, 0);
 
-            yield return new WaitForSeconds(0.5f);
         }
+
+        //Iluminamos esa casilla visitada
+        MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().color = Color.white;
 
         //Comprobamos si se ha llegado a casa
         if (HayCasa(pos))
         {
-            RelojActivoHastaCasa = false;
+            Estado = EstadoEscena.FIN;
         }
 
-        //Comprobamos si se ha encontrado el cadáver
-        if (agente.CuerpoEncontrado())
-            cadaverGO.GetComponent<SpriteRenderer>().enabled = true;
+        //Comprobamos si ha encontrado cadaver y arma
+        if (Estado == EstadoEscena.VUELTA)
+        {
+            agente.VuelveACasa();
+        }
 
-        //Comprobamos si se ha encontrado el arma
+        //Comprobamos si ha encontrado  arma
         if (agente.ArmaEncontrada())
         {
             armaGO.GetComponent<SpriteRenderer>().enabled = false;
             IconoArma.enabled = true;
         }
+        //Comprobamos si ha encontrado cadaver 
 
-        //Comprobamos si ha encontrado cadaver y arma
-        if (Estado != EstadoEscena.FIN && agente.ObjetivoCumplido())
-        {
-            agente.VuelveACasa();
-            RelojActivoHastaCadaver = false;
-            Estado = EstadoEscena.FIN;
-            ButtonPausaBusqueda.gameObject.SetActive(false);
-        }
+        if (agente.CuerpoEncontrado())
+            cadaverGO.GetComponent<SpriteRenderer>().enabled = true;
 
-        //Comprobamos si el agente ha muerto
-        if (agente.AgenteMuerto())
-        {
-            ButtonPausaBusqueda.gameObject.SetActive(false);
-            TextoMensaje.text = "El agente ha fallado en su misión";
-            RelojActivoHastaCasa = RelojActivoHastaCadaver = false;
-        }
-
-        //Iluminamos esa casilla visitada
-        MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().color = Color.white;
 
         //Avisamos a Update de que esta corrutina ha terminado
         haciendoCamino = false;
@@ -455,5 +433,18 @@ public class GameManager : MonoBehaviour
         numVecesArriesgadas++;
         TextoNumeroArriesgos.text = "Número de veces arriesgadas: " + numVecesArriesgadas;
 
+    }
+
+    public void AgenteMuerto()
+    {
+        Estado = EstadoEscena.FIN;
+        ButtonPausaBusqueda.gameObject.SetActive(false);
+        TextoMensaje.text = "El agente ha fallado en su misión";
+    }
+
+    public void BusquedaTerminada()
+    {
+        Estado = EstadoEscena.VUELTA;
+        ButtonPausaBusqueda.gameObject.SetActive(false);
     }
 }

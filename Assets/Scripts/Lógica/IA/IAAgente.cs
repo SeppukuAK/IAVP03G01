@@ -90,7 +90,10 @@ public class IAAgente
         if (tile.Arma)
         {
             if (Estado == EstadoAgente.BUSCAARMA)
+            {
                 Estado = EstadoAgente.BUSQUEDATERMINADA;
+                GameManager.instance.BusquedaTerminada();
+            }
             else
                 Estado = EstadoAgente.BUSCACUERPO;
 
@@ -99,7 +102,10 @@ public class IAAgente
         else if (tile.Cadaver)
         {
             if (Estado == EstadoAgente.BUSCACUERPO)
+            {
                 Estado = EstadoAgente.BUSQUEDATERMINADA;
+                GameManager.instance.BusquedaTerminada();
+            }
             else
                 Estado = EstadoAgente.BUSCAARMA;
 
@@ -107,7 +113,7 @@ public class IAAgente
 
         else if (tile.Agujero)
         {
-            //Muerte
+            GameManager.instance.AgenteMuerto();
             Estado = EstadoAgente.MUERTO;
         }
 
