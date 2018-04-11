@@ -1,0 +1,23 @@
+Clases comentadas:
+Tileview
+
+
+Pos
+Tile
+Tipos
+Tablero: (Mejorar)
+	-Metodo FueraDelTablero de tablero
+	-Tirar random de Tablero se puede mejorar con una cola
+
+Nodo
+creo que hay un error en AESTRELLA
+
+
+
+HAY QUE HACER:
+-Estados del agente:Revisar
+-Mostrar estadisticas
+-Comentar y separar bien GameManager
+-Sprite del muertito
+-IAAgente: 
+	-Comentar actualizaPercepcion

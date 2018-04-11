@@ -4,31 +4,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+public enum EstadoEscena { COLOCACADAVER, COLOCAAGUJERO, PAUSA, PLAY };
+
 public class GameManager : MonoBehaviour
 {
+    //Singleton
     public static GameManager instance;
-
-
-    //--------ATRIBUTOS--------------
-    //Posibles Scripts
-    public Pos PosCasa { get; set; }
-
-    public Estado Estado { get; set; }
-    public GameObject[,] MatrizTiles { get; set; }//matriz de GO tiles
-
-    //Macros
-    public const int ANCHO = 10;
-    public const int ALTO = 5;
-    public const float DISTANCIA = 0.64f;
-
-    Tablero tablero;
-   
-    public bool Pausa { get; set; }
-
-    private Detective agente;
-    private GameObject agenteGO;
-    private GameObject armaGO;
-    private GameObject cadaverGO;
 
     //--------ATRIBUTOS--------------
 
@@ -51,17 +32,37 @@ public class GameManager : MonoBehaviour
 
     public Image IconoArma;
 
-    //--------ATRIBUTOS UNITY--------
-    private void Awake()
-    {
-        instance = this;
+    public Text TextoMensaje;
 
+    //--------ATRIBUTOS UNITY--------
+
+    //CONSTANTES
+    public const int ANCHO = 10;
+    public const int ALTO = 5;
+    public const float DISTANCIA = 0.64f;
+
+    private Tablero tablero;
+    private Agente agente;
+    public Pos PosCasa { get; set; }
+    public EstadoEscena Estado { get; set; }
+
+    private GameObject agenteGO;
+    private GameObject armaGO;
+    private GameObject cadaverGO;
+    private GameObject[,] MatrizTiles { get; set; }//matriz de GO tiles
+
+    //--------ATRIBUTOS--------------
+
+    void Awake()
+    {
+        //GameManager es Singleton
+        instance = this;
     }
 
     //----------INICIALIZACION--------------
     void Start()
     {
-        Pausa = false;
+        //Inicializar GUI
         IconoArma.enabled = false;
 
         ButtonComienzaBusqueda.gameObject.SetActive(false);
@@ -69,7 +70,8 @@ public class GameManager : MonoBehaviour
         ButtonReiniciaBusqueda.gameObject.SetActive(false);
 
 
-        Estado = Estado.COLOCACADAVER;
+        Estado = EstadoEscena.COLOCACADAVER;
+        TextoMensaje.text = "Coloca el barco destruido";
 
         MatrizTiles = new GameObject[ALTO, ANCHO];
         tablero = new Tablero();
@@ -98,7 +100,7 @@ public class GameManager : MonoBehaviour
         }
 
         PosCasa = new Pos(Random.Range(0, ANCHO), Random.Range(0, ALTO));
-        GameObject casa = Instantiate(casaPrefab, new Vector3(PosCasa.x * DISTANCIA, -PosCasa.y * DISTANCIA, 0), Quaternion.identity);
+        GameObject casa = Instantiate(casaPrefab, new Vector3(PosCasa.X * DISTANCIA, -PosCasa.Y * DISTANCIA, 0), Quaternion.identity);
     }
 
     //----------INICIALIZACION--------------
@@ -110,13 +112,14 @@ public class GameManager : MonoBehaviour
     //Se le llama cuando el usuario hace click desde TileView
     public void ColocaCadaver(Pos pos)
     {
-        tablero.ColocaCadaver(pos.x, pos.y);
+        tablero.ColocaCadaver(pos.X, pos.Y);
 
-        cadaverGO = Instantiate(cadaverPrefab, new Vector3(pos.x * DISTANCIA, -pos.y * DISTANCIA, 0), Quaternion.identity);
+        cadaverGO = Instantiate(cadaverPrefab, new Vector3(pos.X * DISTANCIA, -pos.Y * DISTANCIA, 0), Quaternion.identity);
 
 
         //Cambiamos el estado
-        Estado = Estado.COLOCAAGUJERO;
+        Estado = EstadoEscena.COLOCAAGUJERO;
+        TextoMensaje.text = "Coloca los obstáculos y pulsa el botón Comienza Busqueda cuando quieras que el agente comience su busqueda";
 
         ButtonComienzaBusqueda.gameObject.SetActive(true);
     }
@@ -134,6 +137,7 @@ public class GameManager : MonoBehaviour
     }
 
     //------Se le llama desde Tablero.ColocaCadaver()----------
+
     //-------Se le llama al colocar el cadaver-------------------//
 
 
@@ -142,10 +146,10 @@ public class GameManager : MonoBehaviour
     //Se le llama cuando el usuario hace click desde TileView
     public void ColocaAgujero(Pos pos)
     {
-        tablero.ColocaAgujero(pos); //coloca el agujero en la matriz logica
+        tablero.ColocaAgujero(pos.X,pos.Y); //coloca el agujero en la matriz logica
 
         //Aplicamos el sprite
-        MatrizTiles[pos.y, pos.x].GetComponent<SpriteRenderer>().sprite = spriteAgujero;
+        MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().sprite = spriteAgujero;
     }
 
     public void ColocaSpriteBarro(int x, int y) 
@@ -173,13 +177,16 @@ public class GameManager : MonoBehaviour
     //Boton ComienzaBosqueda
     public void IniciaBusqueda()
     {
+        Estado = EstadoEscena.PLAY;
+        TextoMensaje.text = "";
+
         ButtonComienzaBusqueda.gameObject.SetActive(false);
         ButtonPausaBusqueda.gameObject.SetActive(true);
         ButtonReiniciaBusqueda.gameObject.SetActive(true);
 
-        agenteGO = Instantiate(detectivePrefab, new Vector3(PosCasa.x * DISTANCIA, -PosCasa.y * DISTANCIA, 0), Quaternion.identity);
+        agenteGO = Instantiate(detectivePrefab, new Vector3(PosCasa.X * DISTANCIA, -PosCasa.Y * DISTANCIA, 0), Quaternion.identity);
 
-        agente = new Detective(tablero.Matriz[PosCasa.y, PosCasa.x]);
+        agente = new Agente(tablero.Matriz[PosCasa.Y, PosCasa.X]);
 
         for (int y = 0; y < GameManager.ALTO; y++)
         {
@@ -190,7 +197,7 @@ public class GameManager : MonoBehaviour
             }
 
         }
-        MatrizTiles[PosCasa.y, PosCasa.x].GetComponent<SpriteRenderer>().color = Color.white;
+        MatrizTiles[PosCasa.Y, PosCasa.X].GetComponent<SpriteRenderer>().color = Color.white;
 
         armaGO.GetComponent<SpriteRenderer>().enabled = false;
         cadaverGO.GetComponent<SpriteRenderer>().enabled = false;
@@ -199,11 +206,15 @@ public class GameManager : MonoBehaviour
     }
 
     //Boton Pausa
-    public void PausaBusqueda()
+    public void PausaReanudaBusqueda()
     {
-        Pausa = !Pausa;
-        if (!Pausa)
+        if (Estado == EstadoEscena.PLAY)
+            Estado = EstadoEscena.PAUSA;
+        else
+        {
+            Estado = EstadoEscena.PLAY;
             StartCoroutine("ContinuaBusqueda");
+        }
 
     }
     //Boton Reinicio
@@ -217,12 +228,12 @@ public class GameManager : MonoBehaviour
     private bool haciendoCamino = false;
     IEnumerator ContinuaBusqueda()
     {
-        while (!agente.ObjetivoCumplido() && !Pausa )
+        while (!agente.ObjetivoCumplido() && !agente.AgenteMuerto() && Estado == EstadoEscena.PLAY )
         {
             if (!haciendoCamino)
             {
                 haciendoCamino = true;
-                agente.AvanzaAPos();
+                agente.Avanza();
             }
 
              yield return new WaitForSeconds(0.016f);
@@ -231,8 +242,13 @@ public class GameManager : MonoBehaviour
         while(haciendoCamino)
             yield return new WaitForSeconds(0.016f);
 
-        if (!Pausa)
+        if (agente.ObjetivoCumplido())
             agente.VuelveACasa();
+
+        //HACER ALGO
+        else if (agente.AgenteMuerto())
+            TextoMensaje.text = "El agente ha fallado en su misión";
+        
 
         yield return null;
 
@@ -242,7 +258,7 @@ public class GameManager : MonoBehaviour
     //Necesario para conocimientoAgente
     public Tile GetTile(Pos pos)
     {
-        return tablero.Matriz[pos.y, pos.x];
+        return tablero.Matriz[pos.Y, pos.X];
     }
 
  
@@ -255,35 +271,30 @@ public class GameManager : MonoBehaviour
 
     IEnumerator AvanzaUnPaso(Stack<Pos> camino)
     {
-
+        Pos pos = new Pos(0,0);
         while (camino.Count > 0)
         {
-            Pos pos = camino.Pop();
+            pos = camino.Pop();
 
-            agente.pos = pos;
-            agenteGO.transform.position = new Vector3(pos.x * DISTANCIA, -pos.y * DISTANCIA, 0);
+            agente.Pos = pos;
+            agenteGO.transform.position = new Vector3(pos.X * DISTANCIA, -pos.Y * DISTANCIA, 0);
 
             yield return new WaitForSeconds(0.2f);
         }
+
+        if(agente.CuerpoEncontrado())
+            cadaverGO.GetComponent<SpriteRenderer>().enabled = true;
+
+        if (agente.ArmaEncontrada())
+        {
+            armaGO.GetComponent<SpriteRenderer>().enabled = false;
+            IconoArma.enabled = true;
+        }
+
+        MatrizTiles[pos.Y, pos.X].GetComponent<SpriteRenderer>().color = Color.white;
 
         haciendoCamino = false;
         yield return null;
     }
 
-
-    public void Renderiza (Pos pos)
-    {
-        MatrizTiles[pos.y, pos.x].GetComponent<SpriteRenderer>().color = Color.white;
-    }
-
-    public void RenderizaCadaver()
-    {
-        cadaverGO.GetComponent<SpriteRenderer>().enabled = true;
-    }
-
-    public void RenderizaArma()
-    {
-        IconoArma.enabled = true;
-
-    }
 }
