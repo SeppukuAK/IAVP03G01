@@ -15,9 +15,9 @@ public class MenuManager : MonoBehaviour {
 		
 	}
 
-    public void goPractica2()
+    public void goPractica3()
     {
-        SceneManager.LoadScene("Practica2", LoadSceneMode.Single);
+        SceneManager.LoadScene("Practica3", LoadSceneMode.Single);
 
     }
 }

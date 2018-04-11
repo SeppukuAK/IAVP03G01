@@ -42,6 +42,7 @@ public class Agente
         //A* hasta la nueva pos
         AEstrella Acasa = new AEstrella(IAAgente.MatrizPercepcion, Pos, GameManager.instance.PosCasa);
 
+        GameManager.instance.VueltaACasa = true;
         //Informamos al GameManager de que empiece la corrutina
         GameManager.instance.MoverAgente(Acasa.Camino);
     }
